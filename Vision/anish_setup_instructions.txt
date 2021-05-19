@@ -1,0 +1,17 @@
+- Open DE10_LITE_D8M_VIP.qpf
+- Enter programmer and blast with DE10_LITE_D8M_VIP_time_limited.sof
+- DO NOT close OpenCore Plus IP window
+- Open Nios tools for Eclipse
+- Make sure the filepath to the folder Vision/DE10_LITE_D8M_VIP_16/software has no spaces. I have copied it directly to c:.
+- Import Nios II Software Build Tools Project.
+- Select the ${filepath}/EEE2Rover/DE10_LITE_D8M_VIP_16/software/D8M_Camera_Test/ directory.
+- Right click the project > Run As > Nios II Hardware 
+- Build the project.
+- Configure run configurations (select the USB-Blaster) 
+- Run the project.
+- If there are issues with time conflict, select the two boxes to ignore time conflicts.
+- Open camera and select APN_capture as source.
+- SW0 toggles between red highlight and normal output
+- KEY0 triggers autofocus
+- KEY1 toggles zoom
+- Always copy back the Software folder from c: to the folder with the rest of the files, in order to push any changes made.
