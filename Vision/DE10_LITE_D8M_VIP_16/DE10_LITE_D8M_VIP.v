@@ -176,8 +176,17 @@ Qsys u0 (
 		.altpll_0_locked_conduit_export            (),            				//          altpll_0_locked_conduit.export
 		.altpll_0_phasedone_conduit_export         (),         					//       altpll_0_phasedone_conduit.export		
 		
-		.eee_imgproc_0_conduit_mode_new_signal     (SW[0])
-	);
+		.eee_imgproc_0_conduit_mode_new_signal     (SW[0]),
+		
+//		.uart_interface_0_conduit_end_rx        (ARDUINO_IO[13]), // input from ESP32 RX2pin
+//		.uart_interface_0_conduit_end_rx_data           (), // output [7:0]
+//		.uart_interface_0_conduit_end_rx_valid          (), // output
+//
+//		.uart_interface_0_conduit_end_tx       (ARDUINO_IO[12]), // output to ESP32 TX2pin
+//		.uart_interface_0_conduit_end_tx_data            (), // input [7:0]
+//		.uart_interface_0_conduit_end_tx_transmit                (), // input
+//		.uart_interface_0_conduit_end_tx_ready               ()  // output
+		);
 
 FpsMonitor uFps(
 	.clk50(MAX10_CLK2_50),
