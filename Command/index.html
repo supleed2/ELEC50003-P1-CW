@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+<title>Rover Command Center</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* {
+      box-sizing: border-box;
+    }
+
+.section-container {
+  float: left;
+  width: 50%;
+  padding: 10px;
+}
+.flex-container {
+  display: flex;
+  flex-wrap: nowrap;
+}
+ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+li {
+  padding: 0px;
+  margin-bottom: 0px;
+}
+
+:is(h1, h2, h3, h4, h5, h6, label, strong, meter) {
+    font-family: Arial, Helvetica, sans-serif;
+}
+.movement-control {
+    text-align: center;
+}
+
+.sensor-data {
+    text-align: center;
+}
+
+meter{
+    width: 100%;
+    height: 40px;
+    transform: translateY(-8px);
+}
+
+meter::after {
+ content : attr(value) attr(title);
+ top:-28px;
+ left:0px;
+ position:relative;
+}
+
+.button {
+  display: inline-block;
+  padding: 15px 25px;
+  font-size: 24px;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  outline: none;
+  color: rgb(255, 255, 255);
+  background-color: #161616;
+  border: none;
+  border-radius: 15px;
+  box-shadow: 0 9px rgb(161, 161, 161);
+}
+
+.button:hover {background-color: #585858}
+
+.button:active {
+  background-color: #107C10;
+  box-shadow: 0 5px rgb(161, 161, 161);
+  transform: translateY(4px);
+}
+
+.pressed {
+  background-color: #107C10;
+  box-shadow: 0 5px rgb(161, 161, 161);
+  transform: translateY(4px);
+}
+
+.clearfix::after {
+  content: "";
+  clear: both;
+  display: table;
+}
+
+</style>
+<script>
+document.onkeydown = function(e) {
+    switch (e.keyCode) {
+        case 37:
+            document.getElementById("left-arrow").className = "button pressed";
+            break;
+        case 38:
+            document.getElementById("up-arrow").className = "button pressed";
+            break;
+        case 39:
+            document.getElementById("right-arrow").className = "button pressed";
+            break;
+        case 40:
+            document.getElementById("down-arrow").className = "button pressed";
+            break;
+    }
+};
+document.onkeyup = function(e) {
+    switch (e.keyCode) {
+        case 37:
+            document.getElementById("left-arrow").className = "button";
+            break;
+        case 38:
+            document.getElementById("up-arrow").className = "button";
+            break;
+        case 39:
+            document.getElementById("right-arrow").className = "button";
+            break;
+        case 40:
+            document.getElementById("down-arrow").className = "button";
+            break;
+    }
+};
+
+
+</script>
+</head>
+<body>
+
+<h1 style="text-align:center;">ROVER COMMAND CENTER</h1>
+
+<div class="clearfix">
+
+    <div class="section-container">
+    <div class ="movement-control">
+        <h2>Movement Control</h2>
+        <div style="transform: translateY(0px);">
+            <button id="up-arrow" class="button" ><span>&#8679;</span></button>
+        </div>
+        <div style="transform: translateY(13px);">
+            <button id="left-arrow" class="button"><span>&#8678;</span></button>
+            <button id="down-arrow" class="button"><span>&#8681;</span></button>
+            <button id="right-arrow" class="button"><span>&#8680;</span></button>
+        </div>
+        
+    </div>
+    </div>
+
+    <div class="section-container">
+        <div class="sensor-data">
+            <h2>Sensor Data</h2>
+            <!-- <div class="section-container">
+                <div class="sensor-name">
+                <ul>
+                    <li><label>Battery Voltage</label></li>
+                    <li><label>Odometer</label></li>
+                </ul>
+                </div>
+            </div>
+            <div class="section-container">
+                <div class="sensor-value">
+                <ul>
+                    <li><meter min="4.0" max="6.0" low ="4.5" optimum="5.0" high="4.8" value="5.5" title="V"></meter></li>
+                    <li>25</li>
+                </ul>
+            </div>
+            </div> -->
+            <ul>
+
+                <li><div class="section-container">
+                    <label>Battery Voltage</label>
+                </div>
+                <div class="section-container">
+                    <meter min="4.0" max="6.0" low ="4.5" optimum="5.0" high="4.8" value="5.8" title="V"></meter>
+                </div>
+                </li>
+
+                <li><div class="section-container">
+                    <label>Odometer</label>
+                </div>
+                <div class="section-container">
+                    <strong id="Odometer">28mm</strong>
+                </div>
+                </li>
+            </ul>        
+        </div>
+        
+    </div>
+
+</div>
+
+
+</body>
+</html>
