@@ -90,19 +90,90 @@ meter::after {
 
 </style>
 <script>
+
+var connection = new WebSocket('ws://'+location.hostname+':81/');
+
+var MVM_F_status = 0;
+var MVM_L_status = 0;
+var MVM_R_status = 0;
+var MVM_B_status = 0;
+
+var BTRY_VOLT = 0;
+var ODO_DIST = 0;
+
+function round(value, precision) {
+    var multiplier = Math.pow(10, precision || 0);
+    return Math.round(value * multiplier) / multiplier;
+}
+
+connection.onmessage = function(event){
+    var raw_data = event.data;
+    console.log(raw_data);
+    var data = JSON.parse(raw_data);
+    digiBTRY_VOLT = data.BTRY_VOLT;
+    BTRY_VOLT = round((digiBTRY_VOLT*(4.8e-4)+4), 1)
+    ODO_DIST = data.ODO_DIST;
+    document.getElementById("btry_meter").value = BTRY_VOLT;
+    document.getElementById("Odometer").innerHTML = ODO_DIST;
+}
+
+function send_data()
+{
+  var raw_data = '{"MVM_F":'+MVM_F_status+',"MVM_L":'+MVM_L_status+',"MVM_R":'+MVM_R_status+',"MVM_B":'+MVM_B_status+'}';
+  connection.send(raw_data);
+  console.log(raw_data);
+}
+
+function left_pressed(){
+    MVM_L_status = 1;
+    send_data();
+}
+function left_unpressed(){
+    MVM_L_status = 0;
+    send_data();
+}
+function up_pressed(){
+    MVM_F_status = 1;
+    send_data();
+}
+function up_unpressed(){
+    MVM_F_status = 0;
+    send_data();
+}
+function right_pressed(){
+    MVM_R_status = 1;
+    send_data();
+}
+function right_unpressed(){
+    MVM_R_status = 0;
+    send_data();
+}
+function down_pressed(){
+    MVM_B_status = 1;
+    send_data();
+}
+function down_unpressed(){
+    MVM_B_status = 0;
+    send_data();
+}
+
 document.onkeydown = function(e) {
     switch (e.keyCode) {
         case 37:
             document.getElementById("left-arrow").className = "button pressed";
+            left_pressed();
             break;
         case 38:
             document.getElementById("up-arrow").className = "button pressed";
+            up_pressed();
             break;
         case 39:
             document.getElementById("right-arrow").className = "button pressed";
+            right_pressed();
             break;
         case 40:
             document.getElementById("down-arrow").className = "button pressed";
+            down_pressed();
             break;
     }
 };
@@ -110,19 +181,22 @@ document.onkeyup = function(e) {
     switch (e.keyCode) {
         case 37:
             document.getElementById("left-arrow").className = "button";
+            left_unpressed();
             break;
         case 38:
             document.getElementById("up-arrow").className = "button";
+            up_unpressed();
             break;
         case 39:
             document.getElementById("right-arrow").className = "button";
+            right_unpressed();
             break;
         case 40:
             document.getElementById("down-arrow").className = "button";
+            down_unpressed();
             break;
     }
 };
-
 
 </script>
 </head>
@@ -150,39 +224,25 @@ document.onkeyup = function(e) {
     <div class="section-container">
         <div class="sensor-data">
             <h2>Sensor Data</h2>
-            <!-- <div class="section-container">
-                <div class="sensor-name">
-                <ul>
-                    <li><label>Battery Voltage</label></li>
-                    <li><label>Odometer</label></li>
-                </ul>
-                </div>
-            </div>
-            <div class="section-container">
-                <div class="sensor-value">
-                <ul>
-                    <li><meter min="4.0" max="6.0" low ="4.5" optimum="5.0" high="4.8" value="5.5" title="V"></meter></li>
-                    <li>25</li>
-                </ul>
-            </div>
-            </div> -->
             <ul>
 
                 <li><div class="section-container">
                     <label>Battery Voltage</label>
                 </div>
                 <div class="section-container">
-                    <meter min="4.0" max="6.0" low ="4.5" optimum="5.0" high="4.8" value="5.8" title="V"></meter>
+                    <meter id="btry_meter" min="4.0" max="6.0" low ="4.5" optimum="5.0" high="4.8" value="5.8" title="V"></meter>
                 </div>
                 </li>
 
+                
                 <li><div class="section-container">
                     <label>Odometer</label>
                 </div>
                 <div class="section-container">
-                    <strong id="Odometer">28mm</strong>
+                    <strong id="Odometer">28</strong><strong>mm</strong>
                 </div>
                 </li>
+
             </ul>        
         </div>
         
