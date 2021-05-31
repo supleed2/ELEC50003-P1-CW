@@ -12,6 +12,9 @@ const int L_Led = 12; //LED subsitute for the 'movement left command'.
 const int R_Led = 15; //LED subsitute for the 'movement right command'.
 const int D_Led = 13; //LED subsitute for the 'movement back command'.
 
+/* const char* ssid     = "ssid";
+const char* password = "xxxxxxxx"; */
+
 int potVal = 0;
 bool butState = 1;  //Variables only for testing - will be removed in final
 
@@ -33,7 +36,7 @@ char index_html[] PROGMEM = R"=====(
       box-sizing: border-box;
     }
 
-.section-container {
+.section_container {
   float: left;
   width: 50%;
   padding: 10px;
@@ -56,11 +59,11 @@ li {
 :is(h1, h2, h3, h4, h5, h6, label, strong, meter) {
     font-family: Arial, Helvetica, sans-serif;
 }
-.movement-control {
+.movement_control {
     text-align: center;
 }
 
-.sensor-data {
+.sensor_data {
     text-align: center;
 }
 
@@ -181,22 +184,57 @@ function down_unpressed(){
     send_data();
 }
 
+var timer = null;
+
+function up_mouseDown() {
+  timer = setInterval(up_pressed, 100);
+}
+function up_mouseUp() {
+    clearInterval(timer);
+    up_unpressed();
+}
+
+function down_mouseDown() {
+  timer = setInterval(down_pressed, 100);
+}
+function down_mouseUp() {
+    clearInterval(timer);
+    down_unpressed();
+}
+
+function right_mouseDown() {
+  timer = setInterval(right_pressed, 100);
+}
+function right_mouseUp() {
+    clearInterval(timer);
+    right_unpressed();
+}
+
+function left_mouseDown() {
+  timer = setInterval(left_pressed, 100);
+}
+function left_mouseUp() {
+    clearInterval(timer);
+    left_unpressed();
+}
+
+
 document.onkeydown = function(e) {
     switch (e.keyCode) {
         case 37:
-            document.getElementById("left-arrow").className = "button pressed";
+            document.getElementById("left_arrow").className = "button pressed";
             left_pressed();
             break;
         case 38:
-            document.getElementById("up-arrow").className = "button pressed";
+            document.getElementById("up_arrow").className = "button pressed";
             up_pressed();
             break;
         case 39:
-            document.getElementById("right-arrow").className = "button pressed";
+            document.getElementById("right_arrow").className = "button pressed";
             right_pressed();
             break;
         case 40:
-            document.getElementById("down-arrow").className = "button pressed";
+            document.getElementById("down_arrow").className = "button pressed";
             down_pressed();
             break;
     }
@@ -204,19 +242,19 @@ document.onkeydown = function(e) {
 document.onkeyup = function(e) {
     switch (e.keyCode) {
         case 37:
-            document.getElementById("left-arrow").className = "button";
+            document.getElementById("left_arrow").className = "button";
             left_unpressed();
             break;
         case 38:
-            document.getElementById("up-arrow").className = "button";
+            document.getElementById("up_arrow").className = "button";
             up_unpressed();
             break;
         case 39:
-            document.getElementById("right-arrow").className = "button";
+            document.getElementById("right_arrow").className = "button";
             right_unpressed();
             break;
         case 40:
-            document.getElementById("down-arrow").className = "button";
+            document.getElementById("down_arrow").className = "button";
             down_unpressed();
             break;
     }
@@ -230,39 +268,39 @@ document.onkeyup = function(e) {
 
 <div class="clearfix">
 
-    <div class="section-container">
-    <div class ="movement-control">
+    <div class="section_container">
+    <div class ="movement_control">
         <h2>Movement Control</h2>
         <div style="transform: translateY(0px);">
-            <button id="up-arrow" class="button" ><span>&#8679;</span></button>
+            <button id="up_arrow" onmousedown="up_mouseDown()" onmouseup="up_mouseUp()" class="button" ><span>&#8679;</span></button>
         </div>
         <div style="transform: translateY(13px);">
-            <button id="left-arrow" class="button"><span>&#8678;</span></button>
-            <button id="down-arrow" class="button"><span>&#8681;</span></button>
-            <button id="right-arrow" class="button"><span>&#8680;</span></button>
+            <button id="left_arrow" onmousedown="left_mouseDown()" onmouseup="left_mouseUp()" class="button"><span>&#8678;</span></button>
+            <button id="down_arrow" onmousedown="down_mouseDown()" onmouseup="down_mouseUp()" class="button"><span>&#8681;</span></button>
+            <button id="right_arrow" onmousedown="right_mouseDown()" onmouseup="right_mouseUp()" class="button"><span>&#8680;</span></button>
         </div>
         
     </div>
     </div>
 
-    <div class="section-container">
-        <div class="sensor-data">
+    <div class="section_container">
+        <div id="bleh" class="sensor_data">
             <h2>Sensor Data</h2>
             <ul>
 
-                <li><div class="section-container">
+                <li><div class="section_container">
                     <label>Battery Voltage</label>
                 </div>
-                <div class="section-container">
+                <div class="section_container">
                     <meter id="btry_meter" min="4.0" max="6.0" low ="4.5" optimum="5.0" high="4.8" value="5.8" title="V"></meter>
                 </div>
                 </li>
 
                 
-                <li><div class="section-container">
+                <li><div class="section_container">
                     <label>Odometer</label>
                 </div>
-                <div class="section-container">
+                <div class="section_container">
                     <strong id="Odometer">28</strong><strong>mm</strong>
                 </div>
                 </li>
@@ -273,7 +311,6 @@ document.onkeyup = function(e) {
     </div>
 
 </div>
-
 
 </body>
 </html>
@@ -336,6 +373,26 @@ void setup()
   pinMode(D_Led,OUTPUT);
   pinMode(butPin, INPUT_PULLUP);
   
+
+/*   Serial.println();
+    Serial.println();
+    Serial.print("Connecting to ");
+    Serial.println(ssid);
+
+    WiFi.begin(ssid, password);
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        Serial.print(".");
+    }
+
+    Serial.println("");
+    Serial.println("Rover connected to ");
+    Serial.println(ssid);
+    Serial.println();
+    Serial.println("Rover IP address: ");
+    Serial.println(WiFi.localIP()); */
+
   WiFi.softAP("RoverAP", "SplendidCheeks");
   Serial.println();
   Serial.println("RoverAP running");
@@ -360,7 +417,7 @@ void setup()
 
   server.onNotFound(notFound);
 
-  server.begin();  // it will start webserver
+  server.begin();
   websockets.begin();
   websockets.onEvent(webSocketEvent);
   timer.attach(0.5,send_sensor_data);
@@ -385,7 +442,6 @@ void send_sensor_data()
          JSON_Data += potVal;
          JSON_Data += ",\"ODO_DIST\":";
          JSON_Data += d;
-         JSON_Data += "}";
-  //Serial.println(JSON_Data);     
+         JSON_Data += "}";     
   websockets.broadcastTXT(JSON_Data);
 }
