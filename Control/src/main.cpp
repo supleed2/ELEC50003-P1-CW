@@ -43,20 +43,18 @@ void setup()
 	Serial1.begin(9600, SERIAL_8N1, RX1pin, TX1pin); // Set up hardware UART1
 	// Set up remaining communication ports here (Energy, Drive, Vision)
 
-	if (!SPIFFS.begin(true))
+	if (!SPIFFS.begin(true)) // Mount SPIFFS
 	{
 		Serial.println("SPIFFS failed to mount");
 		return;
 	}
+	Serial.println("SPIFFS mounted");
 
-	Serial.println("Connecting to AP");
 	WiFi.begin(WIFI_SSID, WIFI_PW);
 	while (WiFi.status() != WL_CONNECTED)
 	{
 		delay(500);
-		Serial.print(".");
 	}
-	Serial.println("\nConnected to AP");
 	while (!MDNS.begin("rover"))
 	{
 		Serial.println("Error setting up mDNS, retrying in 5s");
@@ -153,6 +151,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 	{
 		Serial.println("Websocket keep-alive PONG");
 	}
+	break;
 	default:
 	{
 		Serial.println(String("Websocket received invalid event type: ") + type + String(", exiting"));
