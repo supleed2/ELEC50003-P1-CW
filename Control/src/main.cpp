@@ -4,7 +4,7 @@
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
-#include <Ticker.h>
+#include "TickerV2.h"
 #include <WebSocketsServer.h>
 #include <credentials.h>
 #include <ArduinoJson.h>
@@ -27,10 +27,10 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 // Global objects
 AsyncWebServer webserver(80);
 WebSocketsServer websocketserver(81);
-Ticker ticker(returnSensorData, 500, 0, MILLIS);
+Ticker ticker;
 
 // Global variables
-int battery_voltage = 0;
+float battery_voltage = 4.0f;
 int distance_travelled = 0;
 
 void setup()
@@ -71,7 +71,7 @@ void setup()
 
 	websocketserver.begin();
 	websocketserver.onEvent(webSocketEvent);
-	ticker.start();
+	ticker.attach(0.5, returnSensorData);
 }
 
 void loop()
@@ -101,7 +101,17 @@ void printFPGAoutput()
 void returnSensorData()
 {
 	// Collect sensor data here?
+	distance_travelled++;
+	if (battery_voltage < 6)
+	{
+		battery_voltage += 0.2;
+	}
+	else
+	{
+		battery_voltage = 4;
+	}
 	String JSON_Data = String("{\"BTRY_VOLT\":") + battery_voltage + String(",\"ODO_DIST\":") + distance_travelled + "}";
+	Serial.println(JSON_Data);
 	websocketserver.broadcastTXT(JSON_Data);
 }
 

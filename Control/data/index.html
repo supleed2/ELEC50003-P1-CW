@@ -108,17 +108,11 @@
         var BTRY_VOLT = 0;
         var ODO_DIST = 0;
 
-        function round(value, precision) {
-            var multiplier = Math.pow(10, precision || 0);
-            return Math.round(value * multiplier) / multiplier;
-        }
-
         connection.onmessage = function (event) {
             var raw_data = event.data;
             console.log(raw_data);
             var data = JSON.parse(raw_data);
-            digiBTRY_VOLT = data.BTRY_VOLT;
-            BTRY_VOLT = round((digiBTRY_VOLT * (4.8e-4) + 4), 1)
+            BTRY_VOLT = data.BTRY_VOLT;
             ODO_DIST = data.ODO_DIST;
             document.getElementById("btry_meter").value = BTRY_VOLT;
             document.getElementById("Odometer").innerHTML = ODO_DIST;
