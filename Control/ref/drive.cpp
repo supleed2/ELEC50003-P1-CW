@@ -17,7 +17,7 @@ void loop()
 {
     DynamicJsonDocument rdoc(1024); // receive doc, not sure how big this needs to be
     deserializeJson(rdoc, Serial1); // Take JSON input from UART1
-    int requiredHeading = rdoc["rH"];
+    int requiredHeading = rdoc["rH"]; // if -1: command in progress, returning requested heading, dist/sp to be ignored
     int distance = rdoc["dist"];
     float speed = rdoc["sp"];
     int currentHeading = rdoc["cH"];
@@ -31,7 +31,7 @@ void loop()
     // Do Drive stuff, set the 5 values above
 
     DynamicJsonDocument tdoc(1024); // transmit doc, not sure how big this needs to be
-    tdoc["comp"] = commandComplete;
+    tdoc["comp"] = commandComplete; // If 0: command in progress, current heading requested
     tdoc["mW"] = powerUsage_mW;
     tdoc["mm"] = distTravelled_mm;
     tdoc["pos"][0] = current_x;
