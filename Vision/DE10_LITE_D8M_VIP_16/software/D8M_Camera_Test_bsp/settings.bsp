@@ -2,11 +2,11 @@
 <sch:Settings xmlns:sch="http://www.altera.com/embeddedsw/bsp/schema">
         <BspType>hal</BspType>
         <BspVersion>default</BspVersion>
-        <BspGeneratedTimeStamp>Jun 1, 2021 3:52:17 PM</BspGeneratedTimeStamp>
-        <BspGeneratedUnixTimeStamp>1622559138001</BspGeneratedUnixTimeStamp>
-        <BspGeneratedLocation>/home/ad3919/nfshome/EE2Rover/Vision/DE10_LITE_D8M_VIP_16/software/D8M_Camera_Test_bsp</BspGeneratedLocation>
+        <BspGeneratedTimeStamp>03-Jun-2021 15:15:44</BspGeneratedTimeStamp>
+        <BspGeneratedUnixTimeStamp>1622729744108</BspGeneratedUnixTimeStamp>
+        <BspGeneratedLocation>F:\Ed\Stuff\EEE2Rover\DE10_LITE_D8M_VIP_16\software\D8M_Camera_Test_bsp</BspGeneratedLocation>
         <BspSettingsFile>settings.bsp</BspSettingsFile>
-        <SopcDesignFile>../../Qsys.sopcinfo</SopcDesignFile>
+        <SopcDesignFile>..\..\Qsys.sopcinfo</SopcDesignFile>
         <JdiFile>default</JdiFile>
         <Cpu>nios2_gen2</Cpu>
         <SchemaVersion>1.9</SchemaVersion>
@@ -323,18 +323,6 @@
                 <Group>common</Group>
         </Setting>
         <Setting>
-                <SettingName>hal.make.cflags_mgpopt</SettingName>
-                <Identifier>CFLAGS_MGPOPT</Identifier>
-                <Type>UnquotedString</Type>
-                <Value>-mgpopt=local</Value>
-                <DefaultValue>-mgpopt=local</DefaultValue>
-                <DestinationFile>makefile_variable</DestinationFile>
-                <Description>C/C++ compiler to generate (do not generate) GP-relative accesses. 'none' tells the compilter not to generate GP-relative accesses. 'local' will generate GP-relative accesses for small data objects that are not external, weak, or uninitialized common symbols. Also use GP-relative addressing for objects that have been explicitly placed in a small data section via a section attribute. provides the default set of debug symbols typically required to debug a typical application. 'global' is same as 'local' but also generate GP-relative accesses for small data objects that are external, weak, or common.</Description>
-                <Restrictions>none</Restrictions>
-                <Enabled>false</Enabled>
-                <Group>common</Group>
-        </Setting>
-        <Setting>
                 <SettingName>hal.make.ar</SettingName>
                 <Identifier>AR</Identifier>
                 <Type>UnquotedString</Type>
@@ -549,6 +537,18 @@
                 <Restrictions>none</Restrictions>
                 <Enabled>false</Enabled>
                 <Group>none</Group>
+        </Setting>
+        <Setting>
+                <SettingName>hal.make.cflags_mgpopt</SettingName>
+                <Identifier>CFLAGS_MGPOPT</Identifier>
+                <Type>UnquotedString</Type>
+                <Value>-mgpopt=local</Value>
+                <DefaultValue>-mgpopt=global</DefaultValue>
+                <DestinationFile>public_mk_define</DestinationFile>
+                <Description>C/C++ compiler to generate (do not generate) GP-relative accesses. 'none' tells the compilter not to generate GP-relative accesses. 'local' will generate GP-relative accesses for small data objects that are not external, weak, or uninitialized common symbols. Also use GP-relative addressing for objects that have been explicitly placed in a small data section via a section attribute. provides the default set of debug symbols typically required to debug a typical application. 'global' is same as 'local' but also generate GP-relative accesses for small data objects that are external, weak, or common.</Description>
+                <Restrictions>none</Restrictions>
+                <Enabled>false</Enabled>
+                <Group>common</Group>
         </Setting>
         <Setting>
                 <SettingName>hal.make.ignore_system_derived.sopc_system_id</SettingName>
@@ -898,10 +898,34 @@
                 <Enabled>false</Enabled>
                 <Group xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
         </Setting>
+        <Setting>
+                <SettingName>altera_avalon_uart_driver.enable_small_driver</SettingName>
+                <Identifier>ALTERA_AVALON_UART_SMALL</Identifier>
+                <Type>BooleanDefineOnly</Type>
+                <Value>false</Value>
+                <DefaultValue>false</DefaultValue>
+                <DestinationFile>public_mk_define</DestinationFile>
+                <Description>Small-footprint (polled mode) driver</Description>
+                <Restrictions>none</Restrictions>
+                <Enabled>false</Enabled>
+                <Group xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+        </Setting>
+        <Setting>
+                <SettingName>altera_avalon_uart_driver.enable_ioctl</SettingName>
+                <Identifier>ALTERA_AVALON_UART_USE_IOCTL</Identifier>
+                <Type>BooleanDefineOnly</Type>
+                <Value>false</Value>
+                <DefaultValue>false</DefaultValue>
+                <DestinationFile>public_mk_define</DestinationFile>
+                <Description>Enable driver ioctl() support. This feature is not compatible with the 'small' driver; ioctl() support will not be compiled if either the UART 'enable_small_driver' or HAL 'enable_reduced_device_drivers' settings are enabled.</Description>
+                <Restrictions>none</Restrictions>
+                <Enabled>false</Enabled>
+                <Group xsi:nil="true" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"/>
+        </Setting>
         <MemoryMap>
                 <slaveDescriptor>onchip_memory2_0</slaveDescriptor>
-                <addressRange>0x00020000 - 0x0003869F</addressRange>
-                <addressSpan>100000</addressSpan>
+                <addressRange>0x00020000 - 0x0003FFFF</addressRange>
+                <addressSpan>131072</addressSpan>
                 <attributes>memory</attributes>
         </MemoryMap>
         <MemoryMap>
@@ -981,6 +1005,12 @@
                 <addressRange>0x00042000 - 0x0004201F</addressRange>
                 <addressSpan>32</addressSpan>
                 <attributes/>
+        </MemoryMap>
+        <MemoryMap>
+                <slaveDescriptor>uart_0</slaveDescriptor>
+                <addressRange>0x00042020 - 0x0004203F</addressRange>
+                <addressSpan>32</addressSpan>
+                <attributes>printable</attributes>
         </MemoryMap>
         <LinkerSection>
                 <sectionName>.text</sectionName>

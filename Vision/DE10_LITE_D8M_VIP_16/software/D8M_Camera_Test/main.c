@@ -1,9 +1,10 @@
+
+
 #include <stdio.h>
 #include "I2C_core.h"
 #include "terasic_includes.h"
 #include "mipi_camera_config.h"
 #include "mipi_bridge_config.h"
-#include "system.h"
 
 #include "auto_focus.h"
 
@@ -21,8 +22,8 @@
 
 #define EXPOSURE_INIT 0x002000
 #define EXPOSURE_STEP 0x100
-#define GAIN_INIT 0xFFF
-#define GAIN_STEP 0xFFF
+#define GAIN_INIT 0x080
+#define GAIN_STEP 0x040
 #define DEFAULT_LEVEL 3
 
 #define MIPI_REG_PHYClkCtl		0x0056
@@ -81,56 +82,82 @@ void mipi_show_error_info_more(void){
     printf("CSIPktLen = %d\n",MipiBridgeRegRead(0x006E));
 }
 
+
+
 bool MIPI_Init(void){
 	bool bSuccess;
+
+
 	bSuccess = oc_i2c_init_ex(I2C_OPENCORES_MIPI_BASE, 50*1000*1000,400*1000); //I2C: 400K
 	if (!bSuccess)
 		printf("failed to init MIPI- Bridge i2c\r\n");
+
     usleep(50*1000);
     MipiBridgeInit();
+
     usleep(500*1000);
+
 //	bSuccess = oc_i2c_init_ex(I2C_OPENCORES_CAMERA_BASE, 50*1000*1000,400*1000); //I2C: 400K
 //	if (!bSuccess)
 //		printf("failed to init MIPI- Camera i2c\r\n");
+
     MipiCameraInit();
     MIPI_BIN_LEVEL(DEFAULT_LEVEL);
 //    OV8865_FOCUS_Move_to(340);
+
 //    oc_i2c_uninit(I2C_OPENCORES_CAMERA_BASE);  // Release I2C bus , due to two I2C master shared!
+
+
  	usleep(1000);
+
+
 //    oc_i2c_uninit(I2C_OPENCORES_MIPI_BASE);
+
 	return bSuccess;
 }
 
+
+
+
 int main()
 {
+
 	fcntl(STDIN_FILENO, F_SETFL, O_NONBLOCK);
-	printf("DE10-LITE D8M VGA Demo\n");
-	printf("Imperial College EEE2 Project version\n");
-	IOWR(MIPI_PWDN_N_BASE, 0x00, 0x00);
-	IOWR(MIPI_RESET_N_BASE, 0x00, 0x00);
-	usleep(2000);
-	IOWR(MIPI_PWDN_N_BASE, 0x00, 0xFF);
-	usleep(2000);
-	IOWR(MIPI_RESET_N_BASE, 0x00, 0xFF);
-	printf("Image Processor ID: %x\n",IORD(EEE_IMGPROC_0_BASE,EEE_IMGPROC_ID));
-	usleep(2000);
 
-	// MIPI Init
-	if (!MIPI_Init()){
-		printf("MIPI_Init Init failed!\r\n");
-	}else{
-		printf("MIPI_Init Init successfully!\r\n");
-	}
+  printf("DE10-LITE D8M VGA Demo\n");
+  printf("Imperial College EEE2 Project version\n");
+  IOWR(MIPI_PWDN_N_BASE, 0x00, 0x00);
+  IOWR(MIPI_RESET_N_BASE, 0x00, 0x00);
 
-	//   while(1){
-	mipi_clear_error();
-	usleep(50*1000);
-	mipi_clear_error();
-	usleep(1000*1000);
-	mipi_show_error_info();
-	//	    mipi_show_error_info_more();
-	printf("\n");
-	//   }
+  usleep(2000);
+  IOWR(MIPI_PWDN_N_BASE, 0x00, 0xFF);
+  usleep(2000);
+  IOWR(MIPI_RESET_N_BASE, 0x00, 0xFF);
+
+  printf("Image Processor ID: %x\n",IORD(0x42000,EEE_IMGPROC_ID));
+  //printf("Image Processor ID: %x\n",IORD(EEE_IMGPROC_0_BASE,EEE_IMGPROC_ID)); //Don't know why this doesn't work - definition is in system.h in BSP
+
+
+  usleep(2000);
+
+
+  // MIPI Init
+   if (!MIPI_Init()){
+	  printf("MIPI_Init Init failed!\r\n");
+  }else{
+	  printf("MIPI_Init Init successfully!\r\n");
+  }
+
+//   while(1){
+ 	    mipi_clear_error();
+	 	usleep(50*1000);
+ 	    mipi_clear_error();
+	 	usleep(1000*1000);
+	    mipi_show_error_info();
+//	    mipi_show_error_info_more();
+	    printf("\n");
+//   }
+
 
 #if 0  // focus sweep
 	    printf("\nFocus sweep\n");
@@ -144,10 +171,15 @@ int main()
  	 		else    ii -= 20;
 
  	    	printf("%d\n",ii);
- 	    	OV8865_FOCUS_Move_to(ii);
- 	    	usleep(50*1000);
+ 	     OV8865_FOCUS_Move_to(ii);
+ 	     usleep(50*1000);
  	    }
 #endif
+
+
+
+
+
 
     //////////////////////////////////////////////////////////
         alt_u16 bin_level = DEFAULT_LEVEL;
@@ -160,6 +192,15 @@ int main()
         OV8865SetExposure(exposureTime);
         OV8865SetGain(gain);
         Focus_Init();
+
+        FILE* ser = fopen("/dev/uart_0", "rb+");
+        if(ser){
+        	printf("Opened UART\n");
+        } else {
+        	printf("Failed to open UART\n");
+        	while (1);
+        }
+
   while(1){
 
        // touch KEY0 to trigger Auto focus
@@ -214,9 +255,10 @@ int main()
        //Read messages from the image processor and print them on the terminal
        while ((IORD(0x42000,EEE_IMGPROC_STATUS)>>8) & 0xff) { 	//Find out if there are words to read
            int word = IORD(0x42000,EEE_IMGPROC_MSG); 			//Get next word from message buffer
-    	   if (word == EEE_IMGPROC_MSG_START){ 					//Newline on message identifier
+    	   if (fwrite(&word, 4, 1, ser) != 1)
+    		   printf("Error writing to UART");
+           if (word == EEE_IMGPROC_MSG_START)				//Newline on message identifier
     		   printf("\n");
-    	   }
     	   printf("%08x ",word);
        }
 
