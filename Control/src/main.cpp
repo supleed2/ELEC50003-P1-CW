@@ -1,3 +1,4 @@
+#pragma region Includes
 #include <Arduino.h>
 #include <string>
 // #include <SoftwareSerial.h> Software Serial not currently needed
@@ -9,29 +10,36 @@
 #include <credentials.h>
 #include <ArduinoJson.h>
 #include <SPIFFS.h>
+#pragma endregion
 
-// Enable extra debugging info
+#pragma region Enable extra debugging info for ESP32
 #undef LOG_LOCAL_LEVEL
 #define LOG_LOCAL_LEVEL ESP_LOG_VERBOSE
 #include "esp_log.h"
+#pragma endregion
 
+#pragma region Definitions eg pins
 #define RX1pin 14 // Pin 10 on expansion board, UART1
 #define TX1pin 4  // Pin 11 on expansion board, UART1
+#pragma endregion
 
-// Function Declarations
+#pragma region Function Declarations
 void printFPGAoutput();
 void returnSensorData();
 void notFound(AsyncWebServerRequest *request);
 void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
+#pragma endregion
 
-// Global objects
+#pragma region Global objects
 AsyncWebServer webserver(80);
 WebSocketsServer websocketserver(81);
 Ticker ticker;
+#pragma endregion
 
-// Global variables
+#pragma region Global variables
 float battery_voltage = 4.0f;
 int distance_travelled = 0;
+#pragma endregion
 
 void setup()
 {
