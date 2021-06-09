@@ -4,6 +4,8 @@
 #include <Wire.h>
 #include <INA219_WE.h>
 #include "SPI.h"
+#include <SoftwareSerial.h>
+SoftwareSerial Serial4 = SoftwareSerial(6, 10);
 
 #define RXpin 0 // Define your RX pin here
 #define TXpin 0 // Define your TX pin here
@@ -360,7 +362,7 @@ void setup()
   Wire.setClock(700000); // set the comms speed for i2c
   //-------------------------------------------------------SMPS & MOTOR CODE END------------------------------------------------------//
   Serial.begin(115200);  // Set up hardware UART0 (Connected to USB port)
-  Serial1.begin(9600); // Set up hardware UART1
+  Serial4.begin(9600); // Set up software UART
 
   //Serial.println(getPWMfromSpeed(-1));
   //Serial.println(getPWMfromSpeed(256));
@@ -414,20 +416,12 @@ char asciiart(int k)
 }
 
 byte frame[ADNS3080_PIXELS_X * ADNS3080_PIXELS_Y];
-
+      DynamicJsonDocument rdoc(1024);
 
 void loop()
 {
-
-          analogWrite(pwmr,512);
-          analogWrite(pwml,512);
-          digitalWrite(DIRR, HIGH);
-          digitalWrite(DIRL, LOW);
-          Serial.println(pwmr);
           
-  //Serial.println("Here");
-  DynamicJsonDocument rdoc(1024); // receive doc, not sure how big this needs to be
-  
+  //Serial.println("Here");  
   //deserializeJson(rdoc, Serial1); // Take JSON input from UART1
 
   //Check for updates every 1s...
@@ -436,8 +430,11 @@ void loop()
   if (currentMillis_Command - previousMillis_Command >= interval_Command) {
     // save the last time you blinked the LED
     previousMillis_Command = currentMillis_Command;
-    error = deserializeJson(rdoc, Serial1);
-    //Serial.println("H");
+    // receive doc, not sure how big this needs to be
+       error = deserializeJson(rdoc, Serial4);
+       
+       //Serial.println
+    Serial.println("I am here!");
   }
   
 
@@ -682,7 +679,7 @@ Serial.println("Distance_y = " + String(total_y));
 
 
   //*******************************************************************//
-  //-------------------------------------------------------SMPS & MOTOR CODE END------------------------------------------------------//
+  //----------------s---------------------------------------SMPS & MOTOR CODE END------------------------------------------------------//
 
 }
 
