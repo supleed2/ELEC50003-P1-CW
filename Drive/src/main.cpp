@@ -127,8 +127,16 @@ int dist_to_move_prev_fr = 0;
 unsigned long time_pid_prev_fl = 0;
 unsigned long time_pid_prev_fr = 0;
 
+int dist_to_move_prev_sl = 0;
+int dist_to_move_prev_sr = 0;
+unsigned long time_pid_prev_sl = 0;
+unsigned long time_pid_prev_sr = 0;
+
 float kpdrive = 0.055;
 float kddrive = 4.700;
+
+float kpheading = 0.055;
+float kdheading = 4.700;
 
 volatile byte movementflag = 0;
 volatile int xydat[2];
@@ -145,6 +153,7 @@ int mousecam_read_reg(int reg);
 void mousecam_reset();
 int getCurrentHeading();
 float pid_ms(int dist_to_move, int *dist_to_move_prev, unsigned long *time_pid_prev, float kps, float kds);
+float pid_h_ms(bool left, float speed, int dist_to_move, int *dist_to_move_prev, unsigned long *time_pid_prev, float kps, float kds);
 
 int convTwosComp(int b)
 {
@@ -503,24 +512,32 @@ void loop()
       }
     }
     else
-    { //then move forwards but check angle for drift
-      if (total_x - distance < 0)
+    { //then move forwards but check angle for drift using optical flow
+      if (total_y - distance < 0)
       { //go forwards
-        Serial.println("going forwards");
-        analogWrite(pwmr, getPWMfromSpeed(pid_ms(abs(total_x - distance), &dist_to_move_prev_fr, &time_pid_prev_fr, kpdrive, kddrive), false));
-        analogWrite(pwml, getPWMfromSpeed(pid_ms(abs(total_x - distance), &dist_to_move_prev_fl, &time_pid_prev_fl, kpdrive, kddrive), true));
+        //Serial.println("going forwards");
+        float speed_r = pid_ms(abs(total_y - distance), &dist_to_move_prev_fr, &time_pid_prev_fr, kpdrive, kddrive);
+        float speed_l = pid_ms(abs(total_y - distance), &dist_to_move_prev_fl, &time_pid_prev_fl, kpdrive, kddrive);
+        float speed_r_head = pid_h_ms(0, speed_r, -total_x, &dist_to_move_prev_sr, &time_pid_prev_sr, kpheading, kdheading);
+        float speed_l_head = pid_h_ms(1, speed_l, -total_x, &dist_to_move_prev_sl, &time_pid_prev_sl, kpheading, kdheading); 
+        analogWrite(pwmr, getPWMfromSpeed(speed_r, false));
+        analogWrite(pwml, getPWMfromSpeed(speed_l, true));
         digitalWrite(DIRR, LOW);
         digitalWrite(DIRL, HIGH);
       }
-      else if (total_x - distance > 0)
+      else if (total_y - distance > 0)
       { //go backwards
-        Serial.println("going backwards");
-        analogWrite(pwmr, getPWMfromSpeed(pid_ms(abs(total_x - distance), &dist_to_move_prev_fr, &time_pid_prev_fr, kpdrive, kddrive), false));
-        analogWrite(pwml, getPWMfromSpeed(pid_ms(abs(total_x - distance), &dist_to_move_prev_fl, &time_pid_prev_fl, kpdrive, kddrive), true));
+        //Serial.println("going backwards");
+        float speed_r = pid_ms(abs(total_y - distance), &dist_to_move_prev_fr, &time_pid_prev_fr, kpdrive, kddrive);
+        float speed_l = pid_ms(abs(total_y - distance), &dist_to_move_prev_fl, &time_pid_prev_fl, kpdrive, kddrive);
+        float speed_r_head = pid_h_ms(0, speed_r, -total_x, &dist_to_move_prev_sr, &time_pid_prev_sr, kpheading, kdheading);
+        float speed_l_head = pid_h_ms(1, speed_l, -total_x, &dist_to_move_prev_sl, &time_pid_prev_sl, kpheading, kdheading); 
+        analogWrite(pwmr, getPWMfromSpeed(speed_r, false));
+        analogWrite(pwml, getPWMfromSpeed(speed_l, true));
         digitalWrite(DIRR, HIGH);
         digitalWrite(DIRL, LOW);
       }
-      else if ((total_x == distance))
+      else if ((total_y == distance))
       { //distance met
         //STOP!!!!!
         digitalWrite(pwmr, LOW);
@@ -627,15 +644,15 @@ void loop()
   total_x1 = (total_x1 + distance_x);
   total_y1 = (total_y1 + distance_y);
 
-  total_y = 10 * total_x1 / 157; //Conversion from counts per inch to mm (400 counts per inch)
-  total_x = 10 * total_y1 / 157; //Conversion from counts per inch to mm (400 counts per inch)
+  total_x = 10 * total_x1 / 157; //Conversion from counts per inch to mm (400 counts per inch)
+  total_y = 10 * total_y1 / 157; //Conversion from counts per inch to mm (400 counts per inch)
 
-  /* Serial.print('\n');
+  Serial.print('\n');
 
   Serial.println("Distance_x = " + String(total_x));
 
   Serial.println("Distance_y = " + String(total_y));
-  Serial.print('\n'); */
+  Serial.print('\n');
   //-------------------------------------------------------SMPS & MOTOR CODE START------------------------------------------------------//
   unsigned long currentMillis = millis();
   if (loopTrigger)
@@ -828,4 +845,29 @@ float pid_ms(int dist_to_move, int *dist_to_move_prev, unsigned long *time_pid_p
 
   *dist_to_move_prev = dist_to_move;
   return speed;
+}
+
+// This is a P!ID contrller for heading using optical flow
+
+float pid_h_ms(bool left, float speed, int dist_to_move, int *dist_to_move_prev, unsigned long *time_pid_prev, float kps, float kds){
+  
+  int T_diff = millis() - *time_pid_prev;
+  float speed_aug;
+
+  if ((dist_to_move > 0 && !left )||( dist_to_move < 0 && left)){
+    float speed_aug_mult = (kps * dist_to_move) + ((kds/T_diff) * (dist_to_move - *dist_to_move_prev));
+    if (speed_aug_mult >= 2) speed_aug_mult = 2;
+    else if (speed_aug_mult <= 1) speed_aug_mult = 1;
+    speed_aug = speed / dist_to_move;
+  }else{
+    speed_aug = speed;
+  }
+  
+  *time_pid_prev = millis();
+
+  if (speed_aug >= 1) speed_aug = 1;
+  else if (speed_aug <= 0.3) speed_aug = 0.3;
+
+  *dist_to_move_prev = dist_to_move;
+  return speed_aug;
 }
