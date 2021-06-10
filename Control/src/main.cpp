@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <string>
-// #include <SoftwareSerial.h> Software Serial not currently needed
+#include <SoftwareSerial.h> // Software Serial not currently needed
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
 #include <ESPmDNS.h>
@@ -41,7 +41,8 @@ void setup()
 
 	Serial.begin(115200);							 // Set up hardware UART0 (Connected to USB port)
 	Serial1.begin(9600, SERIAL_8N1, RX1pin, TX1pin); // Set up hardware UART1
-	// Set up remaining communication ports here (Energy, Drive, Vision)
+	Serial2.begin(9600, SERIAL_8N1, 16, 17); 		 // RX 9, TX 8
+	// Set up remaining communication ports here (Energy, Vision)
 
 	if (!SPIFFS.begin(true)) // Mount SPIFFS
 	{
@@ -111,7 +112,7 @@ void returnSensorData()
 		battery_voltage = 4;
 	}
 	String JSON_Data = String("{\"BTRY_VOLT\":") + battery_voltage + String(",\"ODO_DIST\":") + distance_travelled + "}";
-	Serial.println(JSON_Data);
+	// Serial.println(JSON_Data);
 	websocketserver.broadcastTXT(JSON_Data);
 }
 
@@ -137,7 +138,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 	break;
 	case WStype_TEXT:
 	{
-		Serial.printf("Client[%u] sent Text: %s\n", num, payload);
+		// Serial.printf("Client[%u] sent Text: %s\n", num, payload);
 		String command = String((char *)(payload));
 
 		DynamicJsonDocument doc(200);								//creating an instance of a DynamicJsonDocument allocating 200bytes on the heap.
@@ -155,6 +156,23 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 		int MVM_B_status = doc["MVM_B"];
 
 		Serial.println('<' + MVM_F_status + ',' + MVM_B_status + ',' + MVM_L_status + ',' + MVM_R_status + '>');
+
+		Serial.println("UpArrow=" + String(MVM_F_status));
+
+		if (MVM_F_status == 1){
+			DynamicJsonDocument tdoc(1024); // transmit doc, not sure how big this needs to be
+			tdoc["rH"] = 0;
+			tdoc["dist"] = 100;
+			tdoc["sp"] = 1;
+			serializeJson(tdoc, Serial2);  // Build JSON and send on UART1
+		}
+		if (MVM_B_status == 1){
+			DynamicJsonDocument tdoc(1024); // transmit doc, not sure how big this needs to be
+			tdoc["rH"] = 0;
+			tdoc["dist"] = -100;
+			tdoc["sp"] = 1;
+			serializeJson(tdoc, Serial2);  // Build JSON and send on UART1
+		}
 	}
 	break;
 	case WStype_PONG:
