@@ -122,6 +122,14 @@ int b = 0;
 int distance_x = 0;
 int distance_y = 0;
 
+int dist_to_move_prev_fl = 0;
+int dist_to_move_prev_fr = 0;
+unsigned long time_pid_prev_fl = 0;
+unsigned long time_pid_prev_fr = 0;
+
+float kpdrive = 0.055;
+float kddrive = 4.700;
+
 volatile byte movementflag = 0;
 volatile int xydat[2];
 
@@ -136,6 +144,7 @@ void mousecam_write_reg(int reg, int val);
 int mousecam_read_reg(int reg);
 void mousecam_reset();
 int getCurrentHeading();
+float pid_ms(int dist_to_move, int *dist_to_move_prev, unsigned long *time_pid_prev, float kps, float kds);
 
 int convTwosComp(int b)
 {
@@ -498,16 +507,16 @@ void loop()
       if (total_x - distance < 0)
       { //go forwards
         Serial.println("going forwards");
-        analogWrite(pwmr, getPWMfromSpeed(spd, false));
-        analogWrite(pwml, getPWMfromSpeed(spd, true));
+        analogWrite(pwmr, getPWMfromSpeed(pid_ms(abs(total_x - distance), &dist_to_move_prev_fr, &time_pid_prev_fr, kpdrive, kddrive), false));
+        analogWrite(pwml, getPWMfromSpeed(pid_ms(abs(total_x - distance), &dist_to_move_prev_fl, &time_pid_prev_fl, kpdrive, kddrive), true));
         digitalWrite(DIRR, LOW);
         digitalWrite(DIRL, HIGH);
       }
       else if (total_x - distance > 0)
       { //go backwards
         Serial.println("going backwards");
-        analogWrite(pwmr, getPWMfromSpeed(spd, false));
-        analogWrite(pwml, getPWMfromSpeed(spd, true));
+        analogWrite(pwmr, getPWMfromSpeed(pid_ms(abs(total_x - distance), &dist_to_move_prev_fr, &time_pid_prev_fr, kpdrive, kddrive), false));
+        analogWrite(pwml, getPWMfromSpeed(pid_ms(abs(total_x - distance), &dist_to_move_prev_fl, &time_pid_prev_fl, kpdrive, kddrive), true));
         digitalWrite(DIRR, HIGH);
         digitalWrite(DIRL, LOW);
       }
@@ -802,4 +811,21 @@ float pidi(float pid_input){
   e2i = e1i; //update last last time's error
   e1i = e0i; // update last time's error
   return u0i;
+}
+
+// This is a P!ID contrller for motor speed
+
+float pid_ms(int dist_to_move, int *dist_to_move_prev, unsigned long *time_pid_prev, float kps, float kds){
+  
+  int T_diff = millis() - *time_pid_prev;
+  float speed = (kps * dist_to_move) + ((kds/T_diff) * (dist_to_move - *dist_to_move_prev));
+  *time_pid_prev = millis();
+
+  Serial.println(speed);
+
+  if (speed >= 1) speed = 1;
+  else if (speed <= 0.5) speed = 0.5;
+
+  *dist_to_move_prev = dist_to_move;
+  return speed;
 }
