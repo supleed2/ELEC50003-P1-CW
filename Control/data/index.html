@@ -14,8 +14,8 @@
 
         .section_container {
             float: left;
-            width: 50%;
-            padding: 10px;
+            width: 33%;
+            padding: 0px;
         }
 
         .flex-container {
@@ -49,13 +49,13 @@
         meter {
             width: 100%;
             height: 40px;
-            transform: translateY(-8px);
+            transform: translateY(8px);
         }
 
         meter::after {
             content: attr(value) attr(title);
             top: -28px;
-            left: 0px;
+            left: 45%;
             position: relative;
         }
 
@@ -241,55 +241,42 @@
     <h1 style="text-align:center;">ROVER COMMAND CENTER</h1>
 
     <div class="clearfix">
-
-        <div class="section_container">
-            <div class="movement_control">
-                <h2>Movement Control</h2>
-                <div style="transform: translateY(0px);">
-                    <button id="up_arrow" onmousedown="up_mouseDown()" onmouseup="up_mouseUp()"
-                        class="button"><span>&#8679;</span></button>
-                </div>
-                <div style="transform: translateY(13px);">
-                    <button id="left_arrow" onmousedown="left_mouseDown()" onmouseup="left_mouseUp()"
-                        class="button"><span>&#8678;</span></button>
-                    <button id="down_arrow" onmousedown="down_mouseDown()" onmouseup="down_mouseUp()"
-                        class="button"><span>&#8681;</span></button>
-                    <button id="right_arrow" onmousedown="right_mouseDown()" onmouseup="right_mouseUp()"
-                        class="button"><span>&#8680;</span></button>
-                </div>
-
-            </div>
-        </div>
-
-        <div class="section_container">
-            <div id="bleh" class="sensor_data">
-                <h2>Sensor Data</h2>
-                <ul>
-
-                    <li>
-                        <div class="section_container">
-                            <label>Battery Voltage</label>
-                        </div>
-                        <div class="section_container">
-                            <meter id="btry_meter" min="4.0" max="6.0" low="4.5" optimum="5.0" high="4.8" value="5.8"
-                                title="V"></meter>
-                        </div>
-                    </li>
-
-
-                    <li>
-                        <div class="section_container">
-                            <label>Odometer</label>
-                        </div>
-                        <div class="section_container">
-                            <strong id="Odometer">28</strong><strong>mm</strong>
-                        </div>
-                    </li>
-
-                </ul>
-            </div>
-
-        </div>
+        <table style="width:100%;">
+            <tr>
+                <th><h2>Control Panel</h2></th>
+                <th><h2>Telemetry</h2></th>
+                <th><h2>Command Line</h2></th>
+            </tr>
+            <tr>
+                <td>
+                    <div style="transform: translateY(0px); text-align:center;">
+                        <button id="up_arrow" onmousedown="up_mouseDown()" onmouseup="up_mouseUp()"
+                            class="button"><span>&#8679;</span></button>
+                    </div>
+                    <div style="transform: translateY(13px); text-align:center;">
+                        <button id="left_arrow" onmousedown="left_mouseDown()" onmouseup="left_mouseUp()"
+                            class="button"><span>&#8678;</span></button>
+                        <button id="down_arrow" onmousedown="down_mouseDown()" onmouseup="down_mouseUp()"
+                            class="button"><span>&#8681;</span></button>
+                        <button id="right_arrow" onmousedown="right_mouseDown()" onmouseup="right_mouseUp()"
+                            class="button"><span>&#8680;</span></button>
+                    </div>
+                </td>
+                <td>
+                <table style="width:100%;">
+                    <tr>
+                        <td style="width:50%;"><label>Battery Voltage</label></td>
+                        <td style="width:50%;"><meter id="btry_meter" min="4.0" max="6.0" low="4.5" optimum="5.0" high="4.8" value="5.8"
+                            title="V"></meter></td>
+                    </tr>
+                    <tr>
+                        <td style="width:50%;"><label>Odometer</label></td>
+                        <td><strong id="Odometer">28</strong><strong>mm</strong></td>
+                    </tr>
+                </table>
+                </td>
+            </tr>
+        </table>
 
     </div>
 
