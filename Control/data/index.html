@@ -12,38 +12,17 @@
             box-sizing: border-box;
         }
 
-        .section_container {
-            float: left;
-            width: 33%;
-            padding: 0px;
-        }
-
         .flex-container {
             display: flex;
             flex-wrap: nowrap;
-        }
-
-        ul {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        li {
-            padding: 0px;
-            margin-bottom: 0px;
         }
 
         :is(h1, h2, h3, h4, h5, h6, label, strong, meter) {
             font-family: Arial, Helvetica, sans-serif;
         }
 
-        .movement_control {
-            text-align: center;
-        }
-
-        .sensor_data {
-            text-align: center;
+        h2{
+            margin: 0px;
         }
 
         meter {
@@ -59,10 +38,11 @@
             position: relative;
         }
 
-        .button {
+        button {
+            width: 100%;
             display: inline-block;
-            padding: 15px 25px;
-            font-size: 24px;
+            padding: 7px 7px;
+            font-size: 12px;
             cursor: pointer;
             text-align: center;
             text-decoration: none;
@@ -70,17 +50,17 @@
             color: rgb(255, 255, 255);
             background-color: #161616;
             border: none;
-            border-radius: 15px;
-            box-shadow: 0 9px rgb(161, 161, 161);
+            border-radius: 5px;
+            box-shadow: 0 3px rgb(161, 161, 161);
         }
 
-        .button:hover {
+        button:hover {
             background-color: #585858
         }
 
-        .button:active {
+        button:active {
             background-color: #107C10;
-            box-shadow: 0 5px rgb(161, 161, 161);
+            box-shadow: 0 3px rgb(161, 161, 161);
             transform: translateY(4px);
         }
 
@@ -100,28 +80,57 @@
 
         var connection = new WebSocket('ws://' + location.hostname + ':81/');
 
-        var MVM_F_status = 0;
-        var MVM_L_status = 0;
-        var MVM_R_status = 0;
-        var MVM_B_status = 0;
+        var command_id = 0;
+        var mode = 0;
+        var reqHeading = 0;
+        var reqSpeed = 0;
+        var reqCharge = 0;
 
-        var BTRY_VOLT = 0;
-        var ODO_DIST = 0;
+        var batteryVoltage = 0;
+        var totalTripDistance = 0;
+        var currentHeading = rdoc["cH"];
+        var current_pos = [,];
+        var current_x = 0;
+        var current_y = 0;
+        var signal_strength = 0;
+        var lastCompletedCommand_id = rdoc["LCCid"];
+        var ChargeStatus = 0;
+
 
         connection.onmessage = function (event) {
             var raw_data = event.data;
             console.log(raw_data);
             var data = JSON.parse(raw_data);
-            BTRY_VOLT = data.BTRY_VOLT;
-            ODO_DIST = data.ODO_DIST;
-            document.getElementById("btry_meter").value = BTRY_VOLT;
-            document.getElementById("Odometer").innerHTML = ODO_DIST;
+
+            batteryVoltage = data.bV;
+            totalTripDistance = data.tD;
+            currentHeading = data.cH;
+            current_pos = data.pos;
+            current_x = current_pos[0];
+            current_y = current_pos[1];
+            signal_strength = data.rssi;
+            lastCompletedCommand_id = data.LCCid;
+            ChargeStatus = data.cS;
+            
+            document.getElementById("SigStr").value = signal_strength;
+            document.getElementById("PosX").innerHTML = current_x;
+            document.getElementById("PosY").innerHTML = current_y;
+            document.getElementById("Hdg").innerHTML = currentHeading;
+            document.getElementById("TrpDist").innerHTML = totalTripDistance;
+            document.getElementById("btry_meter").value = batteryVoltage;
+            document.getElementById("ChgStat").innerHTML = (ChargeStatus ? "Charging" : "Discharging");
+            
+            
         }
 
         function send_data() {
             var raw_data = '{"MVM_F":' + MVM_F_status + ',"MVM_L":' + MVM_L_status + ',"MVM_R":' + MVM_R_status + ',"MVM_B":' + MVM_B_status + '}';
             connection.send(raw_data);
             console.log(raw_data);
+        }
+
+        function cIdIncrement() {
+            command_id++;
         }
 
         function left_pressed() {
@@ -191,48 +200,6 @@
             left_unpressed();
         }
 
-
-        document.onkeydown = function (e) {
-            switch (e.keyCode) {
-                case 37:
-                    document.getElementById("left_arrow").className = "button pressed";
-                    left_pressed();
-                    break;
-                case 38:
-                    document.getElementById("up_arrow").className = "button pressed";
-                    up_pressed();
-                    break;
-                case 39:
-                    document.getElementById("right_arrow").className = "button pressed";
-                    right_pressed();
-                    break;
-                case 40:
-                    document.getElementById("down_arrow").className = "button pressed";
-                    down_pressed();
-                    break;
-            }
-        };
-        document.onkeyup = function (e) {
-            switch (e.keyCode) {
-                case 37:
-                    document.getElementById("left_arrow").className = "button";
-                    left_unpressed();
-                    break;
-                case 38:
-                    document.getElementById("up_arrow").className = "button";
-                    up_unpressed();
-                    break;
-                case 39:
-                    document.getElementById("right_arrow").className = "button";
-                    right_unpressed();
-                    break;
-                case 40:
-                    document.getElementById("down_arrow").className = "button";
-                    down_unpressed();
-                    break;
-            }
-        };
-
     </script>
 </head>
 
@@ -241,15 +208,54 @@
     <h1 style="text-align:center;">ROVER COMMAND CENTER</h1>
 
     <div class="clearfix">
-        <table style="width:100%;">
+        <table style="width:1000px; border-spacing: 10px; margin-left: auto; margin-right: auto;">
             <tr>
-                <th><h2>Control Panel</h2></th>
-                <th><h2>Telemetry</h2></th>
-                <th><h2>Command Line</h2></th>
+                <th style="width: 33%;"><h2>Control Panel</h2></th>
+                <th style="width: 33%;"><h2>Telemetry</h2></th>
+                <th style="width: 33%;"><h2>Command Buffer</h2></th>
             </tr>
+            <tr><hr></tr>
             <tr>
                 <td>
-                    <div style="transform: translateY(0px); text-align:center;">
+                    <table style="border-spacing: 5px;">
+                        <tr><td colspan="6"><hr></td></tr>
+                        <tr>
+                            <td style="text-align: center;" colspan="6"><strong>Main</strong></td>
+                        </tr>
+                        
+                        <tr>
+                            <td style="text-align: center;" colspan="2"><button>Emergency <br> Stop</button></td>
+                            <td style="text-align: center;" colspan="2"><button>Telemetry Reset</button></td>
+                            <td style="text-align: center;" colspan="2"><button>Stop and Charge</button></td>
+                        </tr>
+                        <tr><td colspan="6"><hr></td></tr>
+                        <tr>
+                            <td style="text-align: center;" colspan="6"><strong >Rotation</strong></td>
+                        </tr>
+                        
+                        <tr>
+                            <td><button><i>-90&#176;</i></button></td>
+                            <td><button><i>-45&#176;</i></button></td>
+                            <td><button><i>-30&#176;</i></button></td>
+                            <td><button><i>30&#176;</i></button></td>
+                            <td><button><i>45&#176;</i></button></td>
+                            <td><button><i>90&#176;</i></button></td>
+                        </tr>
+                        <tr><td colspan="6"><hr></td></tr>
+                        <tr>
+                            <td style="text-align: center;" colspan="6"><strong>Translation</strong></td>
+                        </tr>
+                        <tr>
+                            <td><button><i>-10000 mm</i></button></td>
+                            <td><button><i>-1000 mm</i></button></td>
+                            <td><button><i>-100 mm</i></button></td>
+                            <td><button><i>100 mm</i></button></td>
+                            <td><button><i>1000 mm</i></button></td>
+                            <td><button><i>10000 mm</i></button></td>
+                        </tr>
+                        <tr><td colspan="6"><hr></td></tr>
+                    </table>
+                    <!-- <div style="transform: translateY(0px); text-align:center;">
                         <button id="up_arrow" onmousedown="up_mouseDown()" onmouseup="up_mouseUp()"
                             class="button"><span>&#8679;</span></button>
                     </div>
@@ -260,19 +266,38 @@
                             class="button"><span>&#8681;</span></button>
                         <button id="right_arrow" onmousedown="right_mouseDown()" onmouseup="right_mouseUp()"
                             class="button"><span>&#8680;</span></button>
-                    </div>
+                    </div> -->
                 </td>
                 <td>
-                <table style="width:100%;">
+                <table style="width:100%; border-spacing: 5px;">
+                    <tr>
+                        <td style="width:50%;"><label>Signal Strength</label></td>
+                        <td style="width:50%;"><meter id="SigStr" min="-80" max="-30" low="-70" high="-50" optimum="-40"  value="-XX"
+                            title="dB"></meter></td>
+                    </tr>
+                    <tr>
+                        <td style="width:50%;"><label>Position</label></td>
+                        <td style="width:50%;"><strong id="PosX">X</strong><strong>,</strong><strong id="PosY">Y</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="width:50%;"><label>Heading</label></td>
+                        <td style="width:50%;"><strong id="Hdg">H</strong><strong>&#176;</strong></td>
+                    </tr>
+                    <tr>
+                        <td style="width:50%;"><label>Trip Distance</label></td>
+                        <td style="width:50%;"><strong id="TrpDist">X</strong><strong> mm</strong></td>
+                    </tr>
                     <tr>
                         <td style="width:50%;"><label>Battery Voltage</label></td>
-                        <td style="width:50%;"><meter id="btry_meter" min="4.0" max="6.0" low="4.5" optimum="5.0" high="4.8" value="5.8"
+                        <td style="width:50%;"><meter id="btry_meter" min="4.0" max="6.0" low="4.5" high="4.8" optimum="5.0"  value="X.X"
                             title="V"></meter></td>
                     </tr>
+                    
                     <tr>
-                        <td style="width:50%;"><label>Odometer</label></td>
-                        <td><strong id="Odometer">28</strong><strong>mm</strong></td>
+                        <td style="width:50%;"><label>Charge Status</label></td>
+                        <td style="width:50%;"><strong id="ChgStat">Disconnect</strong></td>
                     </tr>
+                    
                 </table>
                 </td>
             </tr>
