@@ -10,6 +10,7 @@
 #include "credentials.h"
 #include <ArduinoJson.h>
 #include <SPIFFS.h>
+#include "status.h"
 #pragma endregion
 
 #pragma region Enable extra debugging info for ESP32
@@ -37,6 +38,7 @@ Ticker ticker;
 #pragma endregion
 
 #pragma region Global variables
+ControlStatus_t Status;
 float battery_voltage = 4.0f;
 int distance_travelled = 0;
 #pragma endregion
@@ -47,6 +49,7 @@ void setup()
 	esp_log_level_set("wifi", ESP_LOG_WARN);  // enable WARN logs from WiFi stack
 	esp_log_level_set("dhcpc", ESP_LOG_INFO); // enable INFO logs from DHCP client
 
+	Status = CS_IDLE;
 	Serial.begin(115200);							 // Set up hardware UART0 (Connected to USB port)
 	Serial1.begin(9600, SERIAL_8N1, RX1pin, TX1pin); // Set up hardware UART1
 	// Set up remaining communication ports here (Energy, Drive, Vision)
