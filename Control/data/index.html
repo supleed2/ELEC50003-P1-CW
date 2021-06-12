@@ -25,6 +25,16 @@
             margin: 0px;
         }
 
+        #command_space {
+            width:100%; 
+            height: 200px; 
+            line-height: normal; 
+            overflow: auto; 
+            background-color: rgb(248, 248, 248);
+            color: black;
+            border: 1px solid black;
+        }
+
         meter {
             width: 100%;
             height: 40px;
@@ -48,7 +58,7 @@
             text-decoration: none;
             outline: none;
             color: rgb(255, 255, 255);
-            background-color: #161616;
+            background-color: #222222;
             border: none;
             border-radius: 5px;
             box-shadow: 0 3px rgb(161, 161, 161);
@@ -59,15 +69,9 @@
         }
 
         button:active {
-            background-color: #107C10;
+            background-color: #349134;
             box-shadow: 0 3px rgb(161, 161, 161);
-            transform: translateY(4px);
-        }
-
-        .pressed {
-            background-color: #107C10;
-            box-shadow: 0 5px rgb(161, 161, 161);
-            transform: translateY(4px);
+            transform: translateY(1px);
         }
 
         .clearfix::after {
@@ -83,6 +87,7 @@
         var command_id = 0;
         var mode = 0;
         var reqHeading = 0;
+        var reqDistance = 0;
         var reqSpeed = 0;
         var reqCharge = 0;
 
@@ -124,81 +129,27 @@
         }
 
         function send_data() {
-            var raw_data = '{"MVM_F":' + MVM_F_status + ',"MVM_L":' + MVM_L_status + ',"MVM_R":' + MVM_R_status + ',"MVM_B":' + MVM_B_status + '}';
+            var raw_data = '{"Cid":' + command_id + ',"mode":' + mode + ',"rH":' + reqHeading + ',"rD":' + reqDistance + ',"rS":' + reqSpeed + ',"rC":' + reqCharge + '}';
             connection.send(raw_data);
             console.log(raw_data);
+        }
+
+        function echoCommandbuf()  {
+            document.getElementById("command_buffer").innerHTML += '[' + command_id + '] ' + document.getElementById("commandInput").value + "<br>";
+            cIdIncrement();
+            document.getElementById("commandInput").value = "";
+            console.log('test');
         }
 
         function cIdIncrement() {
             command_id++;
         }
 
-        function left_pressed() {
-            MVM_L_status = 1;
-            send_data();
-        }
-        function left_unpressed() {
-            MVM_L_status = 0;
-            send_data();
-        }
-        function up_pressed() {
-            MVM_F_status = 1;
-            send_data();
-        }
-        function up_unpressed() {
-            MVM_F_status = 0;
-            send_data();
-        }
-        function right_pressed() {
-            MVM_R_status = 1;
-            send_data();
-        }
-        function right_unpressed() {
-            MVM_R_status = 0;
-            send_data();
-        }
-        function down_pressed() {
-            MVM_B_status = 1;
-            send_data();
-        }
-        function down_unpressed() {
-            MVM_B_status = 0;
-            send_data();
-        }
 
-        var timer = null;
 
-        function up_mouseDown() {
-            timer = setInterval(up_pressed, 100);
-        }
-        function up_mouseUp() {
-            clearInterval(timer);
-            up_unpressed();
-        }
 
-        function down_mouseDown() {
-            timer = setInterval(down_pressed, 100);
-        }
-        function down_mouseUp() {
-            clearInterval(timer);
-            down_unpressed();
-        }
 
-        function right_mouseDown() {
-            timer = setInterval(right_pressed, 100);
-        }
-        function right_mouseUp() {
-            clearInterval(timer);
-            right_unpressed();
-        }
 
-        function left_mouseDown() {
-            timer = setInterval(left_pressed, 100);
-        }
-        function left_mouseUp() {
-            clearInterval(timer);
-            left_unpressed();
-        }
 
     </script>
 </head>
@@ -215,18 +166,20 @@
                 <th style="width: 33%;"><h2>Command Buffer</h2></th>
             </tr>
             <tr><hr></tr>
+
+            <!-- Control Panel Section -->
             <tr>
-                <td>
-                    <table style="border-spacing: 5px;">
+                <td style="vertical-align: top;">
+                    <table style="width:100%; border-spacing: 5px;">
                         <tr><td colspan="6"><hr></td></tr>
                         <tr>
                             <td style="text-align: center;" colspan="6"><strong>Main</strong></td>
                         </tr>
                         
                         <tr>
-                            <td style="text-align: center;" colspan="2"><button>Emergency <br> Stop</button></td>
+                            <td style="text-align: center;" colspan="2"><button style="color: red;">Emergency <br> Stop</button></td>
                             <td style="text-align: center;" colspan="2"><button>Telemetry Reset</button></td>
-                            <td style="text-align: center;" colspan="2"><button>Stop and Charge</button></td>
+                            <td style="text-align: center;" colspan="2"><button>Full <br> Charge</button></td>
                         </tr>
                         <tr><td colspan="6"><hr></td></tr>
                         <tr>
@@ -255,21 +208,13 @@
                         </tr>
                         <tr><td colspan="6"><hr></td></tr>
                     </table>
-                    <!-- <div style="transform: translateY(0px); text-align:center;">
-                        <button id="up_arrow" onmousedown="up_mouseDown()" onmouseup="up_mouseUp()"
-                            class="button"><span>&#8679;</span></button>
-                    </div>
-                    <div style="transform: translateY(13px); text-align:center;">
-                        <button id="left_arrow" onmousedown="left_mouseDown()" onmouseup="left_mouseUp()"
-                            class="button"><span>&#8678;</span></button>
-                        <button id="down_arrow" onmousedown="down_mouseDown()" onmouseup="down_mouseUp()"
-                            class="button"><span>&#8681;</span></button>
-                        <button id="right_arrow" onmousedown="right_mouseDown()" onmouseup="right_mouseUp()"
-                            class="button"><span>&#8680;</span></button>
-                    </div> -->
                 </td>
-                <td>
-                <table style="width:100%; border-spacing: 5px;">
+
+                <!-- Telemetry Section -->
+
+                <td style="vertical-align: top;">
+                <table style="width:100%; border-spacing: 5px; ">
+                    <tr><td colspan="6"><hr></td></tr>
                     <tr>
                         <td style="width:50%;"><label>Signal Strength</label></td>
                         <td style="width:50%;"><meter id="SigStr" min="-80" max="-30" low="-70" high="-50" optimum="-40"  value="-XX"
@@ -299,6 +244,19 @@
                     </tr>
                     
                 </table>
+                </td>
+                
+                <!-- Command Buffer Section -->
+                <td style="vertical-align: top;">
+                    <table style="width:100%; border-spacing: 5px; ">
+                        <tr><td><hr></td></tr>
+                        <tr><td colspan="2"><div id="command_space"><p id="command_buffer" style="padding-left: 5px; font-size: 14px; font-family: 'Courier New', Courier, monospace;"></p></div></td></tr>
+                        <tr>
+                            <td><input type="text" placeholder="Type a command or 'help'." id="commandInput" value="" onkeyup="if(event.keyCode == 13){document.getElementById('commandEnter').click();}" style="width: 100%; font-size: 14px; font-family: 'Courier New', Courier, monospace;"></td>
+                            <td style="width: 7%; "><button onclick="echoCommandbuf()" id="commandEnter" style="height: 20px; width: 20px; padding: 3px 2px;">&crarr;</button></td>
+                        </tr>
+                    </table>
+                    
                 </td>
             </tr>
         </table>
