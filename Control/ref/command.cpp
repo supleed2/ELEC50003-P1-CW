@@ -3,8 +3,10 @@
 #include <string>
 
 #define WebSocket 0
-int state, batteryVoltage, batteryLevel, totalTripDistance, currentHeading, current_x, current_y, signal_strength, lastCompletedCommand_id; // Info Control ==> Command
-int command_id, mode, reqHeading, reqDistance, reqSpeed, reqCharge; // Info Command ==> Control
+int state, batteryLevel, totalTripDistance, currentHeading, current_x, current_y, signal_strength, lastCompletedCommand_id; // Info Control ==> Command
+float batteryVoltage; // Info Control ==> Command
+int command_id, mode, reqHeading, reqDistance, reqCharge; // Info Command ==> Control
+float reqSpeed; // Info Command ==> Control
 
 void setup() {}
 
