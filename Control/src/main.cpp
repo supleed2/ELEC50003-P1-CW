@@ -11,6 +11,7 @@
 #include <ArduinoJson.h>
 #include <SPIFFS.h>
 #include "status.h"
+#include "instruction.h"
 #pragma endregion
 
 #pragma region Enable extra debugging info for ESP32
