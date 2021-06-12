@@ -3,8 +3,8 @@
 #include <string>
 
 #define WebSocket 0
-int batteryVoltage, batteryLevel, totalTripDistance, currentHeading, current_x, current_y, signal_strength, lastCompletedCommand_id; // Info Command ==> Control
-int command_id, mode, reqHeading, reqDistance, reqSpeed, reqCharge; // Info Control ==> Command
+int state, batteryVoltage, batteryLevel, totalTripDistance, currentHeading, current_x, current_y, signal_strength, lastCompletedCommand_id; // Info Control ==> Command
+int command_id, mode, reqHeading, reqDistance, reqSpeed, reqCharge; // Info Command ==> Control
 
 void setup() {}
 
@@ -12,6 +12,7 @@ void loop()
 {
 	DynamicJsonDocument rdoc(1024); // receive doc, not sure how big this needs to be
 	deserializeJson(rdoc, WebSocket); // Take JSON input from WebSocket
+	state = rdoc["st"]; // State: -1 = Error, 0 = Idle, 1 = Moving, 2 = Charging
 	batteryVoltage =  rdoc["bV"];
 	batteryLevel =  rdoc["bL"];
 	totalTripDistance = rdoc["tD"];
