@@ -21,6 +21,7 @@ void loop()
     int distance = rdoc["dist"];
     float speed = rdoc["sp"];
     int currentHeading = rdoc["cH"];
+	bool resetDistanceTravelled = rdoc["rstD"];
 
     bool commandComplete = 0;
     float powerUsage_mW = 0.0;
