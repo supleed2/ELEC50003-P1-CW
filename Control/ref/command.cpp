@@ -14,7 +14,7 @@ void loop()
 {
 	DynamicJsonDocument rdoc(1024); // receive doc, not sure how big this needs to be
 	deserializeJson(rdoc, WebSocket); // Take JSON input from WebSocket
-	state = rdoc["st"]; // State: -1 = Error, 0 = Idle, 1 = Moving, 2 = Charging
+	state = rdoc["st"]; // State: -1 = Error, 0 = Idle, 1 = Moving, 2 = Charging, 3 = Waiting
 	batteryVoltage = rdoc["bV"];
 	batteryLevel = rdoc["bL"];
 	batteryCycles = rdoc["bC"];
