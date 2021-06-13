@@ -80,25 +80,28 @@
             display: table;
         }
     </style>
+    <script src="command.js"></script>
     <script>
 
         var connection = new WebSocket('ws://' + location.hostname + ':81/');
 
-        var command_id = 0;
+        var command_id = 1;
         var mode = 0;
         var reqHeading = 0;
         var reqDistance = 0;
         var reqSpeed = 0;
         var reqCharge = 0;
 
+        var state = 0;
         var batteryVoltage = 0;
+        var batteryLevel = 0;
         var totalTripDistance = 0;
-        var currentHeading = rdoc["cH"];
+        var currentHeading = 0;
         var current_pos = [,];
         var current_x = 0;
         var current_y = 0;
         var signal_strength = 0;
-        var lastCompletedCommand_id = rdoc["LCCid"];
+        var lastCompletedCommand_id = 0;
         var ChargeStatus = 0;
 
 
@@ -106,7 +109,9 @@
             var raw_data = event.data;
             console.log(raw_data);
             var data = JSON.parse(raw_data);
-
+            
+            state = data.st;
+            batteryLevel = data.bV;
             batteryVoltage = data.bV;
             totalTripDistance = data.tD;
             currentHeading = data.cH;
@@ -134,22 +139,27 @@
             console.log(raw_data);
         }
 
-        function echoCommandbuf()  {
-            document.getElementById("command_buffer").innerHTML += '[' + command_id + '] ' + document.getElementById("commandInput").value + "<br>";
-            cIdIncrement();
-            document.getElementById("commandInput").value = "";
-            console.log('test');
+        function updateCommandBuffer(){
+            if((mode == 1) || (mode == -1) || (mode == 2)){
+                document.getElementById("command_buffer").innerHTML += '[' + command_id + '] ' + document.getElementById("commandInput").value + "<br>";
+            }else if(mode == 0){
+                document.getElementById("comand_buffer").innerHTML = "Rover Emergency Stop.\n Command buffer cleared. ";
+                document.getElementById("commandInput").value = "";
+            }
+        }
+        
+        function commandError(){
+
         }
 
-        function cIdIncrement() {
-            command_id++;
+        function RunParser(){
+            var commandstring = document.getElementById("commandInput").value;
+            try{
+                command.parse(commandstring);
+            } catch(err){
+                alert(err);
+            }
         }
-
-
-
-
-
-
 
     </script>
 </head>
@@ -253,7 +263,7 @@
                         <tr><td colspan="2"><div id="command_space"><p id="command_buffer" style="padding-left: 5px; font-size: 14px; font-family: 'Courier New', Courier, monospace;"></p></div></td></tr>
                         <tr>
                             <td><input type="text" placeholder="Type a command or 'help'." id="commandInput" value="" onkeyup="if(event.keyCode == 13){document.getElementById('commandEnter').click();}" style="width: 100%; font-size: 14px; font-family: 'Courier New', Courier, monospace;"></td>
-                            <td style="width: 7%; "><button onclick="echoCommandbuf()" id="commandEnter" style="height: 20px; width: 20px; padding: 3px 2px;">&crarr;</button></td>
+                            <td style="width: 7%; "><button onclick="RunParser()" id="commandEnter" style="height: 20px; width: 20px; padding: 3px 2px;">&crarr;</button></td>
                         </tr>
                     </table>
                     
