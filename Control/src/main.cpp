@@ -357,12 +357,20 @@ void recvFromVision() // TO DO
 {
 }
 
-void emergencyStop() // TO DO
+void emergencyStop()
 {
-	// Send stop signals to drive, energy
+	DynamicJsonDocument tdoc(1024);
+	tdoc["rH"] = heading;
+	tdoc["dist"] = -1;
+	tdoc["sp"] = -1;
+	tdoc["cH"] = heading;
+	tdoc["ch"] = 0;
+	serializeJson(tdoc, Serial1); // Send stop signals to Drive
+	serializeJson(tdoc, Serial2); // Send stop signals to Energy
 	while (InstrQueue.size())
 	{
 		InstrQueue.pop(); // Clear Instruction Queue
 	}
+	Status = CS_IDLE; // Reset rover to idle state
 	Serial.println("Instruction Queue cleared");
 }
