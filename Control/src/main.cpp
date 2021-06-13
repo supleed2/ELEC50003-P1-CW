@@ -37,10 +37,11 @@ void queueInstruction(RoverInstruction instruction);
 void sendToCommand();
 void sendToDrive(RoverInstruction instruction);
 void recvFromDrive();
-void sendToEnergy(RoverInstruction instruction);
+void sendToEnergy(bool instruction);
 void recvFromEnergy();
 void sendToVision();
 void recvFromVision();
+void emergencyStop();
 #pragma endregion
 
 #pragma region Global objects
@@ -60,7 +61,11 @@ int odometer;
 int heading;
 int xpos, ypos;
 int signalStrength;
-int lastCompletedCommand;
+int lastExecutedCommand, lastCompletedCommand;
+bool driveCommandComplete;
+int bb_left, bb_right, bb_top, bb_bottom;
+int bb_centre_x, bb_centre_y;
+float chargeGoal;
 #pragma endregion
 
 void setup()
@@ -78,12 +83,16 @@ void setup()
 	Status = CS_IDLE;
 	batteryVoltage = 0;
 	batteryLevel = 0;
+	batteryCycles = 0;
 	odometer = 0;
 	heading = 0;
 	xpos = 0;
 	ypos = 0;
 	signalStrength = 0;
+	lastExecutedCommand = 0;
 	lastCompletedCommand = 0;
+	driveCommandComplete = 1;
+	chargeGoal = 0;
 
 	if (!SPIFFS.begin(true)) // Mount SPIFFS
 	{
@@ -116,9 +125,12 @@ void setup()
 	ticker.attach(0.5, sendToCommand);		 // Set up recurring function to forward rover status to Command
 }
 
-void loop() // TO DO
+void loop()
 {
 	websocketserver.loop(); // Handle incoming client connections
+	recvFromDrive();		// Update stats from Drive
+	recvFromEnergy();		// Update stats from Energy
+	recvFromVision();		// Update stats from Vision
 	switch (Status)
 	{
 	case CS_ERROR:
@@ -129,27 +141,24 @@ void loop() // TO DO
 	break;
 	case CS_IDLE:
 	{
-		if (InstrQueue.empty()) // If Rover idle and InstrQueue empty:
+		if (!InstrQueue.empty()) // If Rover idle and InstrQueue NOT empty: Do the next command in the queue
 		{
-			// TO DO: Collect all data (recvFrom) and
-			sendToCommand(); // Update command panel
-							 // Maybe wait 1s? Possibly prevent from looping too fast
-		}
-		else
-		{
-			// Do the next command in the queue
-			RoverInstruction *instr = &InstrQueue.front();
-			switch (instr->instr)
+			RoverInstruction *instr = &InstrQueue.front(); // Get next command
+			switch (instr->instr)						   // Determine command type
 			{
-			case INSTR_RESET:
+			case INSTR_RESET: // Reset telemetry values (zeroing position/distance)
 			{
 				odometer = 0;
 				xpos = 0;
 				ypos = 0;
+				DynamicJsonDocument tdoc(128);
+				tdoc["rstD"] = 1;
+				serializeJson(tdoc, Serial1); // Send reset odometer signal to Drive
 			}
 			break;
-			case INSTR_STOP:
+			case INSTR_STOP: // Emergency stop
 			{
+				Status = CS_ERROR;
 				while (1)
 				{
 					Serial.println("Emergency Stop should not get queued, hold and print");
@@ -157,16 +166,18 @@ void loop() // TO DO
 				}
 			}
 			break;
-			case INSTR_MOVE:
+			case INSTR_MOVE: // Normal movement
 			{
-				Status = CS_MOVING;
-				sendToDrive(*instr);
+				Status = CS_MOVING; // Set moving state
+				driveCommandComplete = 0;
+				sendToDrive(*instr); // Forward to Drive handler
 			}
 			break;
-			case INSTR_CHARGE:
+			case INSTR_CHARGE: // Normal charge
 			{
-				Status = CS_CHARGING;
-				sendToEnergy(*instr);
+				Status = CS_CHARGING;			   // Set charging state
+				chargeGoal = (float)instr->charge; // Set charging goal
+				sendToEnergy(1);				   // Forward to Energy handler
 			}
 			break;
 			default:
@@ -175,17 +186,36 @@ void loop() // TO DO
 			}
 			break;
 			}
+			lastExecutedCommand = instr->id; // Update tracker of last processed command
 		}
 	}
 	break;
 	case CS_MOVING:
 	{
-		// TO DO
+		if (driveCommandComplete) // If movement command complete:
+		{
+			Status = CS_IDLE;							// Set rover state back to idle
+			lastCompletedCommand = lastExecutedCommand; // Update last completed command
+		}
+		else // If movement command NOT complete:
+		{	 // Send (up to date) current heading to Drive
+			DynamicJsonDocument tdoc(128);
+			tdoc["rH"] = -1;
+			tdoc["cH"] = heading;
+			serializeJson(tdoc, Serial1);
+		}
 	}
 	break;
 	case CS_CHARGING:
 	{
-		// TO DO
+		if (batteryLevel >= chargeGoal) // Compare batteryLevel to chargeGoal
+		{
+			Status = CS_IDLE;
+			lastCompletedCommand = lastExecutedCommand; // Update last completed command
+			sendToEnergy(0); // Stop charging if goal reached
+		}
+		// Otherwise continue charging, no change
+		
 	}
 	break;
 	default:
@@ -193,7 +223,9 @@ void loop() // TO DO
 		Serial.println("Unknown rover state, exiting...");
 		exit(1);
 	}
+	break;
 	}
+	delay(500);
 }
 
 void notFound(AsyncWebServerRequest *request)
@@ -201,7 +233,7 @@ void notFound(AsyncWebServerRequest *request)
 	request->send(404, "text/plain", "Page Not found. Check URI/IP address.");
 }
 
-void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length) // TO DO
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 {
 	switch (type)
 	{
@@ -241,7 +273,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			instr.instr = INSTR_RESET;
 			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
 
-			/* Put reset command in commandFIFO */
+			queueInstruction(instr); // Put reset command in InstrQueue
 		}
 		break;
 		case 0: // Stop immediately, clear command cache
@@ -250,7 +282,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			// instr.instr = INSTR_STOP; // Not needed as Emergency Stop is not queued
 			// Ignore rdoc["Cid"], rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
 
-			/* Clear commandFIFO */
+			emergencyStop();
 		}
 		break;
 		case 1: // Normal movement command, added to end of command cache
@@ -263,7 +295,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			instr.speed = rdoc["rS"];
 			// Ignore rdoc["rC"]
 
-			/* Put movement command in commandFIFO */
+			queueInstruction(instr); // Put movement command in InstrQueue
 		}
 		break;
 		case 2: // Normal charge command, results in no motion, added to end of command cache
@@ -274,18 +306,17 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			instr.charge = rdoc["rC"];
 			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"]
 
-			/* Put charge command in commandFIFO */
+			queueInstruction(instr); // Put charge command in InstrQueue
 		}
 		break;
 		default:
 		{
-			Serial.println("Unknown Command type received, ignoring"); // Default case, print and continue
-																	   // Ignore rdoc["Cid"], rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
+			// Default case, print and continue
+			Serial.println("Unknown Command type received, ignoring");
+			// Ignore rdoc["Cid"], rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
 		}
 		break;
 		}
-
-		queueInstruction(instr);
 	}
 	break;
 	case WStype_PONG:
@@ -313,6 +344,7 @@ void sendToCommand()
 	tdoc["st"] = Status;
 	tdoc["bV"] = batteryVoltage;
 	tdoc["bL"] = batteryLevel;
+	tdoc["bC"] = batteryCycles;
 	tdoc["tD"] = odometer;
 	tdoc["cH"] = heading;
 	tdoc["pos"][0] = xpos;
@@ -334,19 +366,36 @@ void sendToDrive(RoverInstruction instruction)
 	serializeJson(tdoc, Serial1);
 }
 
-void recvFromDrive() // TO DO
+void recvFromDrive() // Update telemetry data and state info from Drive packet
 {
+	if (Serial1.available()) // Check for input from UART1 (Connected to Drive)
+	{
+		DynamicJsonDocument rdoc(1024);
+		deserializeJson(rdoc, Serial1);
+		driveCommandComplete = rdoc["comp"];
+		odometer = rdoc["mm"];
+		xpos = rdoc["pos"][0];
+		ypos = rdoc["pos"][1];
+	}
 }
 
-void sendToEnergy(RoverInstruction instruction)
+void sendToEnergy(bool instruction)
 {
-	DynamicJsonDocument tdoc(1024);
-	tdoc["ch"] = instruction.charge;
+	DynamicJsonDocument tdoc(128);
+	tdoc["ch"] = instruction; // Start charging
 	serializeJson(tdoc, Serial2);
 }
 
-void recvFromEnergy() // TO DO
+void recvFromEnergy() // Update telemetry data and state info from Energy packet
 {
+	if (Serial2.available()) // Check for input from UART2 (Connected to Energy)
+	{
+		DynamicJsonDocument rdoc(1024);
+		deserializeJson(rdoc, Serial2);
+		batteryLevel = rdoc["soc"];
+		batteryVoltage = rdoc["mV"];
+		batteryCycles = rdoc["cyc"];
+	}
 }
 
 void sendToVision()
@@ -354,8 +403,20 @@ void sendToVision()
 	Serial3.print("R"); // Request new data from Vision
 }
 
-void recvFromVision() // TO DO
+void recvFromVision() // Update bounding box and obstacle detection data from Vision packet
 {
+	if (Serial3.available()) // Check for input from UART3 (Connected to Vision)
+	{
+		DynamicJsonDocument rdoc(1024);
+		deserializeJson(rdoc, Serial3);
+		bb_left = rdoc["bb"][0];
+		bb_right = rdoc["bb"][1];
+		bb_top = rdoc["bb"][2];
+		bb_bottom = rdoc["bb"][3];
+		bb_centre_x = rdoc["cen"][0];
+		bb_centre_y = rdoc["cen"][1];
+		heading = rdoc["cH"];
+	}
 }
 
 void emergencyStop()
@@ -365,9 +426,8 @@ void emergencyStop()
 	tdoc["dist"] = -1;
 	tdoc["sp"] = -1;
 	tdoc["cH"] = heading;
-	tdoc["ch"] = 0;
 	serializeJson(tdoc, Serial1); // Send stop signals to Drive
-	serializeJson(tdoc, Serial2); // Send stop signals to Energy
+	sendToEnergy(0);			  // Send stop signal to Energy
 	while (InstrQueue.size())
 	{
 		InstrQueue.pop(); // Clear Instruction Queue
