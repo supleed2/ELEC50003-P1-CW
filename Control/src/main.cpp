@@ -54,7 +54,8 @@ std::queue<RoverInstruction> InstrQueue;
 #pragma region Global variables
 ControlStatus_t Status;
 float batteryVoltage;
-int batteryLevel;
+float batteryLevel;
+float batteryCycles;
 int odometer;
 int heading;
 int xpos, ypos;
