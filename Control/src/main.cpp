@@ -66,6 +66,7 @@ bool driveCommandComplete;
 int bb_left, bb_right, bb_top, bb_bottom;
 int bb_centre_x, bb_centre_y;
 float chargeGoal;
+int waitGoal;
 #pragma endregion
 
 void setup()
@@ -93,6 +94,7 @@ void setup()
 	lastCompletedCommand = 0;
 	driveCommandComplete = 1;
 	chargeGoal = 0;
+	waitGoal = 0;
 
 	if (!SPIFFS.begin(true)) // Mount SPIFFS
 	{
@@ -180,6 +182,12 @@ void loop()
 				sendToEnergy(1);				   // Forward to Energy handler
 			}
 			break;
+			case INSTR_WAIT: // Normal wait
+			{
+				Status = CS_WAITING;			   // Set waiting state
+				waitGoal = millis() + 1000*(instr->time); // Set wait time
+			}
+			break;
 			default:
 			{
 				Serial.println("Unknown instruction type in queue, skipping...");
@@ -212,10 +220,19 @@ void loop()
 		{
 			Status = CS_IDLE;
 			lastCompletedCommand = lastExecutedCommand; // Update last completed command
-			sendToEnergy(0); // Stop charging if goal reached
+			sendToEnergy(0);							// Stop charging if goal reached
 		}
 		// Otherwise continue charging, no change
-		
+	}
+	break;
+	case CS_WAITING:
+	{
+		if (millis() >= waitGoal) // Compare waitGoal to current time
+		{
+			Status = CS_IDLE;
+			lastCompletedCommand = lastExecutedCommand; // Update last completed command
+		}
+		// Otherwise continue waiting, no change
 	}
 	break;
 	default:
@@ -271,7 +288,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			Serial.println("Reset telemetry command received");
 			instr.id = rdoc["Cid"];
 			instr.instr = INSTR_RESET;
-			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
+			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"], rdoc["pSt"]
 
 			queueInstruction(instr); // Put reset command in InstrQueue
 		}
@@ -280,7 +297,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 		{
 			Serial.println("Emergency stop command received");
 			// instr.instr = INSTR_STOP; // Not needed as Emergency Stop is not queued
-			// Ignore rdoc["Cid"], rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
+			// Ignore rdoc["Cid"], rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"], rdoc["pSt"]
 
 			emergencyStop();
 		}
@@ -293,7 +310,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			instr.heading = rdoc["rH"];
 			instr.distance = rdoc["rD"];
 			instr.speed = rdoc["rS"];
-			// Ignore rdoc["rC"]
+			// Ignore rdoc["rC"], rdoc["pSt"]
 
 			queueInstruction(instr); // Put movement command in InstrQueue
 		}
@@ -304,7 +321,18 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			instr.id = rdoc["Cid"];
 			instr.instr = INSTR_CHARGE;
 			instr.charge = rdoc["rC"];
-			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"]
+			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["pSt"]
+
+			queueInstruction(instr); // Put charge command in InstrQueue
+		}
+		break;
+		case 3: // Normal wait command, results in no motion, added to end of command cache
+		{
+			Serial.println("Normal wait command received");
+			instr.id = rdoc["Cid"];
+			instr.instr = INSTR_WAIT;
+			instr.time = rdoc["pSt"];
+			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
 
 			queueInstruction(instr); // Put charge command in InstrQueue
 		}
