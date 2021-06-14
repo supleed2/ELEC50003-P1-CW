@@ -484,7 +484,6 @@ void loop()
     if (!initialAngleSet)
     {
       //turn to angle
-      currentHeading = getCurrentHeading();
       if (currentHeading < requiredHeading)
       { //turn right
         Serial.println("turning right");
@@ -647,12 +646,12 @@ void loop()
   total_x = 10 * total_x1 / 157; //Conversion from counts per inch to mm (400 counts per inch)
   total_y = 10 * total_y1 / 157; //Conversion from counts per inch to mm (400 counts per inch)
 
-  Serial.print('\n');
+/*   Serial.print('\n');
 
   Serial.println("Distance_x = " + String(total_x));
 
   Serial.println("Distance_y = " + String(total_y));
-  Serial.print('\n');
+  Serial.print('\n'); */
   //-------------------------------------------------------SMPS & MOTOR CODE START------------------------------------------------------//
   unsigned long currentMillis = millis();
   if (loopTrigger)
