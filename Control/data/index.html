@@ -25,6 +25,30 @@
             margin: 0px;
         }
 
+        .slider {
+        -webkit-appearance: none;
+        width: 100%;
+        height: 25px;
+        background: #d3d3d3;
+        outline: none;
+        opacity: 0.7;
+        -webkit-transition: .2s;
+        transition: opacity .2s;
+        }
+
+        .slider:hover {
+        opacity: 1;
+        }
+
+        .slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 25px;
+        height: 25px;
+        background: #000000;
+        cursor: pointer;
+        }
+
         #command_space {
             width:100%; 
             height: 200px; 
@@ -62,6 +86,8 @@
             border: none;
             border-radius: 5px;
             box-shadow: 0 3px rgb(161, 161, 161);
+            -webkit-transition: .2s;
+            transition: background-color .2s;
         }
 
         button:hover {
@@ -69,7 +95,6 @@
         }
 
         button:active {
-            background-color: #349134;
             box-shadow: 0 3px rgb(161, 161, 161);
             transform: translateY(1px);
         }
@@ -80,100 +105,18 @@
             display: table;
         }
     </style>
-    <script src="command.js"></script>
-    <script>
 
-        var connection = new WebSocket('ws://' + location.hostname + ':81/');
-
-        var command_id = 1;
-        var mode = 0;
-        var reqHeading = 0;
-        var reqDistance = 0;
-        var reqSpeed = 0;
-        var reqCharge = 0;
-
-        var state = 0;
-        var batteryVoltage = 0;
-        var batteryLevel = 0;
-        var totalTripDistance = 0;
-        var currentHeading = 0;
-        var current_pos = [,];
-        var current_x = 0;
-        var current_y = 0;
-        var signal_strength = 0;
-        var lastCompletedCommand_id = 0;
-        var ChargeStatus = 0;
-
-
-        connection.onmessage = function (event) {
-            var raw_data = event.data;
-            console.log(raw_data);
-            var data = JSON.parse(raw_data);
-            
-            state = data.st;
-            batteryLevel = data.bV;
-            batteryVoltage = data.bV;
-            totalTripDistance = data.tD;
-            currentHeading = data.cH;
-            current_pos = data.pos;
-            current_x = current_pos[0];
-            current_y = current_pos[1];
-            signal_strength = data.rssi;
-            lastCompletedCommand_id = data.LCCid;
-            ChargeStatus = data.cS;
-            
-            document.getElementById("SigStr").value = signal_strength;
-            document.getElementById("PosX").innerHTML = current_x;
-            document.getElementById("PosY").innerHTML = current_y;
-            document.getElementById("Hdg").innerHTML = currentHeading;
-            document.getElementById("TrpDist").innerHTML = totalTripDistance;
-            document.getElementById("btry_meter").value = batteryVoltage;
-            document.getElementById("ChgStat").innerHTML = (ChargeStatus ? "Charging" : "Discharging");
-            
-            
-        }
-
-        function send_data() {
-            var raw_data = '{"Cid":' + command_id + ',"mode":' + mode + ',"rH":' + reqHeading + ',"rD":' + reqDistance + ',"rS":' + reqSpeed + ',"rC":' + reqCharge + '}';
-            connection.send(raw_data);
-            console.log(raw_data);
-        }
-
-        function updateCommandBuffer(){
-            if((mode == 1) || (mode == -1) || (mode == 2)){
-                document.getElementById("command_buffer").innerHTML += '[' + command_id + '] ' + document.getElementById("commandInput").value + "<br>";
-            }else if(mode == 0){
-                document.getElementById("comand_buffer").innerHTML = "Rover Emergency Stop.\n Command buffer cleared. ";
-                document.getElementById("commandInput").value = "";
-            }
-        }
-        
-        function commandError(){
-
-        }
-
-        function RunParser(){
-            var commandstring = document.getElementById("commandInput").value;
-            try{
-                command.parse(commandstring);
-            } catch(err){
-                alert(err);
-            }
-        }
-
-    </script>
 </head>
 
 <body>
-
     <h1 style="text-align:center;">ROVER COMMAND CENTER</h1>
 
     <div class="clearfix">
-        <table style="width:1000px; border-spacing: 10px; margin-left: auto; margin-right: auto;">
+        <table style="width:1100px; border-spacing: 10px; margin-left: auto; margin-right: auto;">
             <tr>
                 <th style="width: 33%;"><h2>Control Panel</h2></th>
                 <th style="width: 33%;"><h2>Telemetry</h2></th>
-                <th style="width: 33%;"><h2>Command Buffer</h2></th>
+                <th style="width: 33%;"><h2>Command Console</h2></th>
             </tr>
             <tr><hr></tr>
 
@@ -193,28 +136,25 @@
                         </tr>
                         <tr><td colspan="6"><hr></td></tr>
                         <tr>
-                            <td style="text-align: center;" colspan="6"><strong >Rotation</strong></td>
-                        </tr>
-                        
-                        <tr>
-                            <td><button><i>-90&#176;</i></button></td>
-                            <td><button><i>-45&#176;</i></button></td>
-                            <td><button><i>-30&#176;</i></button></td>
-                            <td><button><i>30&#176;</i></button></td>
-                            <td><button><i>45&#176;</i></button></td>
-                            <td><button><i>90&#176;</i></button></td>
-                        </tr>
-                        <tr><td colspan="6"><hr></td></tr>
-                        <tr>
-                            <td style="text-align: center;" colspan="6"><strong>Translation</strong></td>
+                            <td style="text-align: center;" colspan="6"><strong> Set Heading to: </strong><strong id="SetHeading" style="font-size: 18px;">270</strong><strong>&#176;</strong></td>
                         </tr>
                         <tr>
-                            <td><button><i>-10000 mm</i></button></td>
-                            <td><button><i>-1000 mm</i></button></td>
-                            <td><button><i>-100 mm</i></button></td>
-                            <td><button><i>100 mm</i></button></td>
-                            <td><button><i>1000 mm</i></button></td>
-                            <td><button><i>10000 mm</i></button></td>
+                            <td colspan="6"><input type ="range" min="0" max="359" value="270" class="slider" id="HdgSlider"></td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;" colspan="6"><strong>Set Translation to: </strong><strong id="SetTrans" style="font-size: 18px;">180</strong><strong>mm</strong></td>
+                        </tr>
+                        <tr>
+                            <td colspan="6"><input type ="range" min="0" max="1000" value="100" class="slider" id="TranSlider"></td>
+                        </tr>
+                        <tr>
+                            <td style="text-align: center;" colspan="6"><strong>Set Speed to: </strong><strong id="SetSpd" style="font-size: 18px;">50</strong><strong>%</strong></td>
+                        </tr>
+                        <tr>
+                            <td colspan="6"><input type ="range" min="0" max="100" value="50" class="slider" id="SpdSlider"></td>
+                        </tr>
+                        <tr>
+                            <td colspan="6"><button onclick="setCmdMode(1); moveCmd(setTransto, setHdgto, setSpdto);">Send<br>Command</button></td>
                         </tr>
                         <tr><td colspan="6"><hr></td></tr>
                     </table>
@@ -224,12 +164,18 @@
 
                 <td style="vertical-align: top;">
                 <table style="width:100%; border-spacing: 5px; ">
-                    <tr><td colspan="6"><hr></td></tr>
+                    <tr><td colspan="2"><hr></td></tr>
+                    <tr>
+                        <td style="width:50%;"><label>Rover Status</label></td>
+                        <td style="width:50%;"><strong id="Rov_status">X</strong>
+                    </tr>
+                    <tr><td colspan="2"><hr></td></tr>
                     <tr>
                         <td style="width:50%;"><label>Signal Strength</label></td>
                         <td style="width:50%;"><meter id="SigStr" min="-80" max="-30" low="-70" high="-50" optimum="-40"  value="-XX"
                             title="dB"></meter></td>
                     </tr>
+                    <tr><td colspan="2"><hr></td></tr>
                     <tr>
                         <td style="width:50%;"><label>Position</label></td>
                         <td style="width:50%;"><strong id="PosX">X</strong><strong>,</strong><strong id="PosY">Y</strong></td>
@@ -242,16 +188,20 @@
                         <td style="width:50%;"><label>Trip Distance</label></td>
                         <td style="width:50%;"><strong id="TrpDist">X</strong><strong> mm</strong></td>
                     </tr>
+                    <tr><td colspan="2"><hr></td></tr>
                     <tr>
                         <td style="width:50%;"><label>Battery Voltage</label></td>
-                        <td style="width:50%;"><meter id="btry_meter" min="4.0" max="6.0" low="4.5" high="4.8" optimum="5.0"  value="X.X"
-                            title="V"></meter></td>
+                        <td style="width:50%;"><strong id="btry_volt">X</strong><strong>V</strong></td>
                     </tr>
-                    
                     <tr>
-                        <td style="width:50%;"><label>Charge Status</label></td>
-                        <td style="width:50%;"><strong id="ChgStat">Disconnect</strong></td>
+                        <td style="width:50%;"><label>Battery Level</label></td>
+                        <td style="width:50%;"><strong id="btry_lvl">X</strong><strong>%</strong></td>
                     </tr>
+                    <tr>
+                        <td style="width:50%;"><label>Battery Cycles</label></td>
+                        <td style="width:50%;"><strong id="btry_cycls">X</strong></td>
+                    </tr>
+                    <tr><td colspan="2"><hr></td></tr>
                     
                 </table>
                 </td>
@@ -259,11 +209,11 @@
                 <!-- Command Buffer Section -->
                 <td style="vertical-align: top;">
                     <table style="width:100%; border-spacing: 5px; ">
-                        <tr><td><hr></td></tr>
-                        <tr><td colspan="2"><div id="command_space"><p id="command_buffer" style="padding-left: 5px; font-size: 14px; font-family: 'Courier New', Courier, monospace;"></p></div></td></tr>
+                        <tr><td colspan="2"><hr></td></tr>
+                        <tr><td colspan="2"><div id="command_space"><p id="command_buffer" style="padding-left: 5px; font-size: 12px; font-family: 'Courier New', Courier, monospace;"></p></div></td></tr>
                         <tr>
                             <td><input type="text" placeholder="Type a command or 'help'." id="commandInput" value="" onkeyup="if(event.keyCode == 13){document.getElementById('commandEnter').click();}" style="width: 100%; font-size: 14px; font-family: 'Courier New', Courier, monospace;"></td>
-                            <td style="width: 7%; "><button onclick="RunParser()" id="commandEnter" style="height: 20px; width: 20px; padding: 3px 2px;">&crarr;</button></td>
+                            <td style="width: 7%; "><button onclick="setCmdMode(0); RunParser();" id="commandEnter" style="height: 20px; width: 20px; padding: 3px 2px;">&crarr;</button></td>
                         </tr>
                     </table>
                     
@@ -272,7 +222,220 @@
         </table>
 
     </div>
-
+    
 </body>
+<script src="command.js"></script>
+<script>
+    var connection = new WebSocket('ws://' + location.hostname + ':81/');
+
+    var command_id = 1;
+    var mode = 0;
+    var reqHeading = 0;
+    var reqDistance = 0;
+    var reqSpeed = 0;
+    var reqCharge = 0;
+    var pstop_time = 0;
+
+    var state = 0;
+    var batteryVoltage = 0;
+    var batteryLevel = 0;
+    var totalTripDistance = 0;
+    var currentHeading = 0;
+    var current_pos = [,];
+    var current_x = 0;
+    var current_y = 0;
+    var signal_strength = 0;
+    var lastCompletedCommand_id = 0;
+    var batteryCycles = 0;
+
+
+    connection.onmessage = function (event) {
+        var raw_data = event.data;
+        console.log(raw_data);
+        var data = JSON.parse(raw_data);
+        
+        state = data.st;
+        batteryLevel = data.bV;
+        batteryVoltage = data.bV;
+        batteryCycles = data.bC;
+        totalTripDistance = data.tD;
+        currentHeading = data.cH;
+        current_pos = data.pos;
+        current_x = current_pos[0];
+        current_y = current_pos[1];
+        signal_strength = data.rssi;
+        lastCompletedCommand_id = data.LCCid;
+        
+        var rStatus = ""
+        if(state == -1){
+            rStatus = "Error";
+        }else if(state == 0){
+            rStatus = "Idle";
+        }else if(state == 1){
+            rStatus = "Moving";
+        }else if(state == 2){
+            rStatus = "Charging";
+        }else{
+            rStatus = "Undefined";
+        }
+
+        document.getElementById("Rov_status").innerHTML = rStatus;
+        document.getElementById("SigStr").value = signal_strength;
+        document.getElementById("PosX").innerHTML = current_x;
+        document.getElementById("PosY").innerHTML = current_y;
+        document.getElementById("Hdg").innerHTML = currentHeading;
+        document.getElementById("TrpDist").innerHTML = totalTripDistance;
+        document.getElementById("btry_volt").innerHTML = batteryVoltage;
+        document.getElementById("btry_lvl").innerHTML = batteryLevel;
+        document.getElementById("btry_cycls").innerHTML = batteryCycles; 
+    }
+
+    function send_data() {
+        var raw_data = '{"Cid":' + command_id + ',"mode":' + mode + ',"rH":' + reqHeading + ',"rD":' + reqDistance + ',"rS":' + reqSpeed + ',"rC":' + reqCharge + ',"pSt":' + pstop_time + '}';
+        connection.send(raw_data);
+        console.log(raw_data);
+    }
+
+    function setCmdMode(mode){
+        cmdMode = mode;
+    }
+
+    function updateCommandBuffer(){
+        var bufferOutput = "";
+        if(cmdMode == 0){
+            bufferOutput = document.getElementById("commandInput").value;
+        }else if(cmdMode == 1){
+            bufferOutput = "move " + reqDistance + "mm " + reqHeading + "deg " + reqSpeed + "%";
+        }
+        if((mode == 1) || (mode == -1) || (mode == 2) || (mode == 3)){
+            document.getElementById("command_buffer").innerHTML += '[' + command_id + '] ' + bufferOutput + "<br>";
+            document.getElementById("commandInput").value = ""
+        }else if(mode == 0){
+            document.getElementById("command_buffer").innerHTML = "Rover Emergency Stop." + "<br>" +"Command buffer cleared." + "<br>";
+            document.getElementById("commandInput").value = "";
+        }
+    }
+    
+    function printHelpDetails(){
+        document.getElementById("command_buffer").innerHTML = 
+        ("------------------------------------------" + "<br>" + "<br>" +
+        "Types of commands available:" + "<br>" + "<br>" +
+        "'move' moves rover along a given vector" + "<br>" +
+        "> move [distance]mm [heading]deg [speed]%" + "<br>" + "<br>" +
+        "'pstop' short for planned stop it stops the rover without reseting the command buffer" + "<br>" +
+        "> pstop" + "<br>" + "<br>" +
+        "'charge' stops the rover and recharges to a set battery level" + "<br>" +
+        "> charge to [percentage]%" + "<br>" + "<br>" +
+        "'telemetry reset' resets X,Y coordinates and Trip Distance" + "<br>" +
+        "> telemetry reset" + "<br>" + "<br>" +
+        "'stop' and emergency stop that stops the rover and resets the command buffer" + "<br>" +
+        "> stop" + "<br>" + "<br>" +
+        "------------------------------------------"
+        )
+        document.getElementById("commandInput").value = "";
+    }
+
+    function moveCmd(dist,hdg,spd){
+        mode = 1;
+        reqDistance = dist;
+        reqHeading = hdg;
+        reqSpeed = spd;
+        reqCharge = 0;
+        pstop_time = 0;
+        tel_rst = 0;
+        send_data();
+        updateCommandBuffer();
+        command_id++;
+    }
+
+    function stpCmd(){
+        mode = 0;
+        reqDistance = 0;
+        reqHeading = 0;
+        reqSpeed = 0;
+        reqCharge = 0;
+        pstop_time = 0;
+        tel_rst = 0;
+        send_data();
+        command_id = 1;
+        updateCommandBuffer();
+    }
+
+    function pstpCmd(pstp_tme){
+        mode = 3;
+        reqDistance = 0;
+        reqHeading = 0;
+        reqSpeed = 0;
+        reqCharge = 0;
+        pstop_time = pstp_tme;
+        tel_rst = 0;
+        send_data();
+        updateCommandBuffer();
+        command_id++;
+    }
+
+    function chrgCmd(chrglvl){
+        mode = 2;
+        reqDistance = 0;
+        reqHeading = 0;
+        reqSpeed = 0;
+        reqCharge = chrglvl;
+        pstop_time = 0;
+        tel_rst = 0;
+        send_data();
+        updateCommandBuffer();
+        command_id++;
+    }
+
+    function telRst(){
+        mode = -1;
+        reqDistance = 0;
+        reqHeading = 0;
+        reqSpeed = 0;
+        reqCharge = 0;
+        pstop_time = 0;
+        send_data();
+        updateCommandBuffer();
+        command_id++;
+    }
+
+
+    function RunParser(){
+        var commandstring = document.getElementById("commandInput").value;
+        try{
+            command.parse(commandstring);
+        } catch(err){
+            alert(err);
+        }
+    }
+
+    var setHdgto = 270;
+    var hdg_slider = document.getElementById("HdgSlider");
+    var hdg_output = document.getElementById("SetHeading");
+    hdg_output.innerHTML = hdg_slider.value;
+    hdg_slider.oninput = function() {
+        hdg_output.innerHTML = this.value;
+        setHdgto = this.value;
+    }
+
+    var setTransto = 100;
+    var tran_slider = document.getElementById("TranSlider");
+    var tran_output = document.getElementById("SetTrans");
+    tran_output.innerHTML = tran_slider.value;
+    tran_slider.oninput = function() {
+        tran_output.innerHTML = this.value;
+        setTransto = this.value;
+    }
+
+    var setSpdto = 50;
+    var spd_slider = document.getElementById("SpdSlider");
+    var spd_output = document.getElementById("SetSpd");
+    spd_output.innerHTML = spd_slider.value;
+    spd_slider.oninput = function() {
+        spd_output.innerHTML = this.value;
+        setSpdto = this.value;
+    }
+
+</script>
 
 </html>

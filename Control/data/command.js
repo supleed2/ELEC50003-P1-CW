@@ -75,9 +75,9 @@ var command = (function(){
 var o=function(k,v,o,l){for(o=o||{},l=k.length;l--;o[k[l]]=v);return o};
 var parser = {trace: function trace () { },
 yy: {},
-symbols_: {"error":2,"command":3,"expr":4,"EOF":5,"MOVE":6,"WHITESPACE":7,"DIST":8,"HEADING":9,"PERCENTAGE":10,"STOP":11,"PSTOP":12,"CHARGETO":13,"TELERST":14,"$accept":0,"$end":1},
-terminals_: {2:"error",5:"EOF",6:"MOVE",7:"WHITESPACE",8:"DIST",9:"HEADING",10:"PERCENTAGE",11:"STOP",12:"PSTOP",13:"CHARGETO",14:"TELERST"},
-productions_: [0,[3,2],[4,7],[4,1],[4,1],[4,3],[4,1]],
+symbols_: {"error":2,"command":3,"expr":4,"EOF":5,"move":6,"whitespace":7,"distance":8,"heading_angle":9,"percentage":10,"stop":11,"pstop":12,"stop_duration":13,"charge_to":14,"telemetry_reset":15,"help":16,"$accept":0,"$end":1},
+terminals_: {2:"error",5:"EOF",6:"move",7:"whitespace",8:"distance",9:"heading_angle",10:"percentage",11:"stop",12:"pstop",13:"stop_duration",14:"charge_to",15:"telemetry_reset",16:"help"},
+productions_: [0,[3,2],[4,7],[4,1],[4,3],[4,3],[4,1],[4,1]],
 performAction: function anonymous(yytext, yyleng, yylineno, yy, yystate /* action[1] */, $$ /* vstack */, _$ /* lstack */) {
 /* this == yyval */
 
@@ -85,72 +85,43 @@ var $0 = $$.length - 1;
 switch (yystate) {
 case 2:
    
-            var inDist = String($$[$0-4]).substr(0, ((String($$[$0-4]).length) - 2));
-            var inHdg = String($$[$0-2]).substr(0, ((String($$[$0-2]).length) - 3));
-            var inSpd = String($$[$0]).substr(0, ((String($$[$0]).length) - 1));
-            mode = 1;
-            reqDistance = Number(inDist);
-            reqHeading = Number(inHdg);
-            reqSpeed = Number(inSpd);
-            reqCharge = 0;
-            send_data();
-            updateCommandBuffer();
-            command_id++;
+            var inDist = Number(String($$[$0-4]).substr(0, ((String($$[$0-4]).length) - 2)));
+            var inHdg = Number(String($$[$0-2]).substr(0, ((String($$[$0-2]).length) - 3)));
+            var inSpd = Number(String($$[$0]).substr(0, ((String($$[$0]).length) - 1)));
+            moveCmd(inDist,inHdg,inSpd);
         
 break;
 case 3:
 
-            mode = 0;
-            reqDistance = 0;
-            reqHeading = 0;
-            reqSpeed = 0;
-            reqCharge = 0;
-            send_data();
-            command_id = 0;
-            updateCommandBuffer()
+            stpCmd();
         
 break;
 case 4:
 
-            mode = 1;
-            reqDistance = 0;
-            reqHeading = 0;
-            reqSpeed = 0;
-            reqCharge = 0;
-            send_data();
-            updateCommandBuffer();
-            command_id++;
+            var inStpDur = Number(String($$[$0]).substr(0, ((String($$[$0]).length) - 1)));
+            pstpCmd(inStpDur);
         
 break;
 case 5:
 
-            mode = 1;
-            reqDistance = 0;
-            reqHeading = 0;
-            reqSpeed = 0;
-
-            var inChrg = String($$[$0]).substr(0, ((String($$[$0]).length) - 1));
-            reqCharge = Number(inChrg);
-
-            send_data();
-            updateCommandBuffer();
-            command_id++;
+            var inChrg = Number(String($$[$0]).substr(0, ((String($$[$0]).length) - 1)));
+            chrgCmd(inChrg);
         
 break;
 case 6:
-mode = 1;
-            reqDistance = 0;
-            reqHeading = 0;
-            reqSpeed = 0;
-            reqCharge = 0;
-            send_data();
-            updateCommandBuffer();
-            command_id++;
+   
+            telRst();
+        
+break;
+case 7:
+
+            printHelpDetails();
+        
 break;
 }
 },
-table: [{3:1,4:2,6:[1,3],11:[1,4],12:[1,5],13:[1,6],14:[1,7]},{1:[3]},{5:[1,8]},{7:[1,9]},{5:[2,3]},{5:[2,4]},{7:[1,10]},{5:[2,6]},{1:[2,1]},{8:[1,11]},{10:[1,12]},{7:[1,13]},{5:[2,5]},{9:[1,14]},{7:[1,15]},{10:[1,16]},{5:[2,2]}],
-defaultActions: {4:[2,3],5:[2,4],7:[2,6],8:[2,1],12:[2,5],16:[2,2]},
+table: [{3:1,4:2,6:[1,3],11:[1,4],12:[1,5],14:[1,6],15:[1,7],16:[1,8]},{1:[3]},{5:[1,9]},{7:[1,10]},{5:[2,3]},{7:[1,11]},{7:[1,12]},{5:[2,6]},{5:[2,7]},{1:[2,1]},{8:[1,13]},{13:[1,14]},{10:[1,15]},{7:[1,16]},{5:[2,4]},{5:[2,5]},{9:[1,17]},{7:[1,18]},{10:[1,19]},{5:[2,2]}],
+defaultActions: {4:[2,3],7:[2,6],8:[2,7],9:[2,1],14:[2,4],15:[2,5],19:[2,2]},
 parseError: function parseError (str, hash) {
     if (hash.recoverable) {
         this.trace(str);
@@ -633,24 +604,28 @@ case 2:return 9
 break;
 case 3:return 10
 break;
-case 4:return 6
+case 4:return 13
 break;
-case 5:return 12
+case 5:return 6
 break;
-case 6:return 11
+case 6:return 12
 break;
-case 7:return 13
+case 7:return 11
 break;
-case 8:return 14
+case 8:return 16
 break;
-case 9:return 5
+case 9:return 14
 break;
-case 10:return 'INVALID'
+case 10:return 15
+break;
+case 11:return 5
+break;
+case 12:return 'invalid_command'
 break;
 }
 },
-rules: [/^(?:\s)/,/^(?:\b[0-9]+mm\b)/,/^(?:\b([0-9]|[1-8][0-9]|9[0-9]|[12][0-9]{2}|3[0-4][0-9]|35[0-9])deg\b)/,/^(?:\b([0-9]|[1-8][0-9]|9[0-9]|100)%)/,/^(?:\bmove\b)/,/^(?:\bpstop\b)/,/^(?:\bstop\b)/,/^(?:\bcharge\sto\b)/,/^(?:\btelemetry\sreset\b)/,/^(?:$)/,/^(?:.)/],
-conditions: {"INITIAL":{"rules":[0,1,2,3,4,5,6,7,8,9,10],"inclusive":true}}
+rules: [/^(?:\s)/,/^(?:\b[0-9]+mm\b)/,/^(?:\b([0-9]|[1-8][0-9]|9[0-9]|[12][0-9]{2}|3[0-4][0-9]|35[0-9])deg\b)/,/^(?:\b([0-9]|[1-8][0-9]|9[0-9]|100)%)/,/^(?:\b[0-9]+s\b)/,/^(?:\bmove\b)/,/^(?:\bpstop\b)/,/^(?:\bstop\b)/,/^(?:\bhelp\b)/,/^(?:\bcharge\sto\b)/,/^(?:\btelemetry\sreset\b)/,/^(?:$)/,/^(?:.)/],
+conditions: {"INITIAL":{"rules":[0,1,2,3,4,5,6,7,8,9,10,11,12],"inclusive":true}}
 });
 return lexer;
 })();
