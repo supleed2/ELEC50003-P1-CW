@@ -19,12 +19,12 @@ void loop()
     deserializeJson(rdoc, Serial1); // Take JSON input from UART1
     int requiredHeading = rdoc["rH"]; // if -1: command in progress, returning requested heading, dist/sp to be ignored
     int distance = rdoc["dist"]; // -1 for emergency stop
-    float speed = rdoc["sp"]; // -1 for emergency stop
+    float spd = rdoc["sp"]; // -1 for emergency stop
     int currentHeading = rdoc["cH"];
-	bool resetDistanceTravelled = rdoc["rstD"];
+    bool resetDistanceTravelled = rdoc["rstD"];
 
     bool commandComplete = 0;
-    float powerUsage_mW = 0.0;
+    float powerUsage_mWh = 0.0;
     int distTravelled_mm = 0;
     int current_x = 0;
     int current_y = 0;
@@ -33,7 +33,7 @@ void loop()
 
     DynamicJsonDocument tdoc(1024); // transmit doc, not sure how big this needs to be
     tdoc["comp"] = commandComplete; // If 0: command in progress, current heading requested
-    tdoc["mW"] = powerUsage_mW;
+    tdoc["mWh"] = powerUsage_mWh;
     tdoc["mm"] = distTravelled_mm;
     tdoc["pos"][0] = current_x;
     tdoc["pos"][1] = current_y;

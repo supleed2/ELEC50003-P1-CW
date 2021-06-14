@@ -1,6 +1,7 @@
 #pragma region Includes
 #include <Arduino.h>
 #include <string>
+#include <SoftwareSerial.h> // Software Serial not currently needed
 #include <SoftwareSerial.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -305,7 +306,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			instr.instr = INSTR_CHARGE;
 			instr.charge = rdoc["rC"];
 			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"]
-
+      
 			queueInstruction(instr); // Put charge command in InstrQueue
 		}
 		break;
