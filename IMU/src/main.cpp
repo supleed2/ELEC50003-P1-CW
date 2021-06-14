@@ -7,7 +7,7 @@ void setup() {
   M5.begin();
   M5.IMU.Init();
   Serial.begin(115200);
-  Serial1.begin(115200, SERIAL_8N1, 26, 36);
+  Serial1.begin(115200, SERIAL_8N1, 26, 0);
 }
 void loop() {
   M5.IMU.getAhrsData(&pitch, &roll, &yaw);
