@@ -23,10 +23,10 @@
 #pragma endregion
 
 #pragma region Definitions eg pins
-#define RX1pin 18 // Pin 6 on expansion board, UART1
-#define TX1pin 5  // Pin 7 on expansion board, UART1
-#define RX2pin 17 // Pin 8 on expansion board, UART2
-#define TX2pin 16 // Pin 9 on expansion board, UART2
+#define RX1pin 17 // Pin 6 on expansion board, UART1
+#define TX1pin 16 // Pin 7 on expansion board, UART1
+#define RX2pin 18 // Pin 8 on expansion board, UART2
+#define TX2pin 5 // Pin 9 on expansion board, UART2
 #define RX3pin 14 // Pin 10 on expansion board, UART3
 #define TX3pin 4  // Pin 11 on expansion board, UART3
 #define RX4pin 15 // Pin 12 on expansion board, UART4
@@ -82,7 +82,7 @@ void setup()
 	Serial1.begin(9600, SERIAL_8N1, RX1pin, TX1pin);	 // Set up hardware UART1 (Connected to Drive)
 	Serial2.begin(9600, SERIAL_8N1, RX2pin, TX2pin);	 // Set up hardware UART2 (Connected to Energy)
 	Serial3.begin(9600, SWSERIAL_8N1, RX3pin, TX3pin);	 // Set up software UART3 (Connected to Vision)
-	Serial4.begin(115200, SWSERIAL_8N1, RX4pin, TX4pin); // Set up software UART4 (Connected to Compass)
+	Serial4.begin(9600, SWSERIAL_8N1, RX4pin, TX4pin); // Set up software UART4 (Connected to Compass)
 
 	// Set global variable startup values
 	Status = CS_IDLE;
@@ -232,7 +232,7 @@ void loop()
 	}
 	break;
 	}
-	delay(500);
+	// delay(500);
 }
 
 void notFound(AsyncWebServerRequest *request)
@@ -430,7 +430,7 @@ void recvFromCompass()
 {
 	if (Serial4.available())
 	{
-		DynamicJsonDocument rdoc(128);
+		DynamicJsonDocument rdoc(1024);
 		deserializeJson(rdoc, Serial4);
 		heading = rdoc["cH"];
 	}
