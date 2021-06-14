@@ -72,25 +72,13 @@ parameter BB_COL_DEFAULT = 24'h00ff00;
 
 wire [7:0]   red, green, blue, grey;
 wire [7:0]   red_out, green_out, blue_out;
-wire [8:0]   hue;
-wire [7:0]   saturation, value;
 
 wire         sop, eop, in_valid, out_ready;
 ////////////////////////////////////////////////////////////////////////
 
-// RGB --> HSV Conversion
-wire [7:0] min, max, delta;
-assign min = (red < green) ? ((red < blue) ? red : blue) : ((green < blue) ? green : blue);
-assign max = (red > green) ? ((red > blue) ? red : blue) : ((green > blue) ? green : blue);
-assign delta = max - min;
-assign hue = (red == max) ? (green - blue)/delta : ((green == max) ? 8'h55+((blue - red)/delta) : 8'haa+((red - green)/delta));
-assign saturation = (max == 8'h00) ? 8'h00 : delta / max;
-assign value = max;
-
 // Detect red areas
 wire red_detect;
-//assign red_detect = red[7] & ~green[7] & ~blue[7];
-assign red_detect = blue[7];
+assign red_detect = red[7] & ~green[7] & ~blue[7];
 
 // Find boundary of cursor box
 

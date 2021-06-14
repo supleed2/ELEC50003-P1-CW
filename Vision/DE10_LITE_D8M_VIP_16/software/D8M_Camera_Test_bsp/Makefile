@@ -93,12 +93,12 @@ OBJ_DIR := ./obj
 
 # This following VERSION comment indicates the version of the tool used to 
 # generate this makefile. A makefile variable is provided for VERSION as well. 
-# ACDS_VERSION: 16.0
-ACDS_VERSION := 16.0
+# ACDS_VERSION: 16.1
+ACDS_VERSION := 16.1
 
 # This following BUILD_NUMBER comment indicates the build number of the tool 
 # used to generate this makefile. 
-# BUILD_NUMBER: 222
+# BUILD_NUMBER: 196
 
 SETTINGS_FILE := settings.bsp
 SOPC_FILE := ../../Qsys.sopcinfo
@@ -146,17 +146,6 @@ BSP_CFLAGS_WARNINGS = -Wall
 
 # C compiler command. 
 CC = nios2-elf-gcc -xc
-
-# C/C++ compiler to generate (do not generate) GP-relative accesses. 'none' 
-# tells the compilter not to generate GP-relative accesses. 'local' will 
-# generate GP-relative accesses for small data objects that are not external, 
-# weak, or uninitialized common symbols. Also use GP-relative addressing for 
-# objects that have been explicitly placed in a small data section via a 
-# section attribute. provides the default set of debug symbols typically 
-# required to debug a typical application. 'global' is same as 'local' but also 
-# generate GP-relative accesses for small data objects that are external, weak, 
-# or common. 
-CFLAGS_MGPOPT = -mgpopt=local
 
 # C++ compiler command. 
 CXX = nios2-elf-gcc -xc++
@@ -249,6 +238,17 @@ altera_avalon_timer_driver_C_LIB_SRCS := \
 	$(altera_avalon_timer_driver_SRCS_ROOT)/src/altera_avalon_timer_sc.c \
 	$(altera_avalon_timer_driver_SRCS_ROOT)/src/altera_avalon_timer_ts.c \
 	$(altera_avalon_timer_driver_SRCS_ROOT)/src/altera_avalon_timer_vars.c
+
+# altera_avalon_uart_driver sources root 
+altera_avalon_uart_driver_SRCS_ROOT := drivers
+
+# altera_avalon_uart_driver sources 
+altera_avalon_uart_driver_C_LIB_SRCS := \
+	$(altera_avalon_uart_driver_SRCS_ROOT)/src/altera_avalon_uart_fd.c \
+	$(altera_avalon_uart_driver_SRCS_ROOT)/src/altera_avalon_uart_init.c \
+	$(altera_avalon_uart_driver_SRCS_ROOT)/src/altera_avalon_uart_ioctl.c \
+	$(altera_avalon_uart_driver_SRCS_ROOT)/src/altera_avalon_uart_read.c \
+	$(altera_avalon_uart_driver_SRCS_ROOT)/src/altera_avalon_uart_write.c
 
 # altera_nios2_gen2_hal_driver sources root 
 altera_nios2_gen2_hal_driver_SRCS_ROOT := HAL
@@ -352,6 +352,7 @@ COMPONENT_C_LIB_SRCS += \
 	$(altera_avalon_jtag_uart_driver_C_LIB_SRCS) \
 	$(altera_avalon_sysid_qsys_driver_C_LIB_SRCS) \
 	$(altera_avalon_timer_driver_C_LIB_SRCS) \
+	$(altera_avalon_uart_driver_C_LIB_SRCS) \
 	$(altera_nios2_gen2_hal_driver_C_LIB_SRCS) \
 	$(hal_C_LIB_SRCS)
 
@@ -404,7 +405,6 @@ BSP_CFLAGS += \
   $(BSP_CFLAGS_DEBUG) \
   $(BSP_CFLAGS_WARNINGS) \
   $(BSP_CFLAGS_USER_FLAGS) \
-  $(CFLAGS_MGPOPT) \
   $(ALT_CFLAGS) \
   $(CFLAGS) 
 

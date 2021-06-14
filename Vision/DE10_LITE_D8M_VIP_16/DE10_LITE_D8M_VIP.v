@@ -178,15 +178,9 @@ Qsys u0 (
 		
 		.eee_imgproc_0_conduit_mode_new_signal     (SW[0]),
 		
-//		.uart_interface_0_conduit_end_rx        (ARDUINO_IO[13]), // input from ESP32 RX2pin
-//		.uart_interface_0_conduit_end_rx_data           (), // output [7:0]
-//		.uart_interface_0_conduit_end_rx_valid          (), // output
-//
-//		.uart_interface_0_conduit_end_tx       (ARDUINO_IO[12]), // output to ESP32 TX2pin
-//		.uart_interface_0_conduit_end_tx_data            (), // input [7:0]
-//		.uart_interface_0_conduit_end_tx_transmit                (), // input
-//		.uart_interface_0_conduit_end_tx_ready               ()  // output
-		);
+		.uart_0_rx_tx_rxd                          (ARDUINO_IO[1]),                          //                     uart_0_rx_tx.rxd
+		.uart_0_rx_tx_txd                          (ARDUINO_IO[0])                           //
+	);
 
 FpsMonitor uFps(
 	.clk50(MAX10_CLK2_50),
