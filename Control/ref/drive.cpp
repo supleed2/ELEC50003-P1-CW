@@ -18,9 +18,10 @@ void loop()
     DynamicJsonDocument rdoc(1024); // receive doc, not sure how big this needs to be
     deserializeJson(rdoc, Serial1); // Take JSON input from UART1
     int requiredHeading = rdoc["rH"]; // if -1: command in progress, returning requested heading, dist/sp to be ignored
-    int distance = rdoc["dist"];
-    float spd = rdoc["sp"];
+    int distance = rdoc["dist"]; // -1 for emergency stop
+    float spd = rdoc["sp"]; // -1 for emergency stop
     int currentHeading = rdoc["cH"];
+    bool resetDistanceTravelled = rdoc["rstD"];
 
     bool commandComplete = 0;
     float powerUsage_mWh = 0.0;
