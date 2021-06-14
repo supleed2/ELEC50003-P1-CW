@@ -111,15 +111,17 @@ void setup()
 	{
 		delay(500);
 	}
-	while (!MDNS.begin("rover")) // Set up mDNS cast at "rover.local/"
+	while (!MDNS.begin("rover2")) // Set up mDNS cast at "rover.local/"
 	{
 		Serial.println("Error setting up mDNS, retrying in 5s");
 		delay(5000);
 	}
-	Serial.println("mDNS set up, access Control Panel at 'rover.local/'");
+	Serial.println("mDNS set up, access Control Panel at 'rover2.local/'");
 
 	webserver.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
 				 { request->send(SPIFFS, "/index.html", "text/html"); }); // Serve "index.html" at root page
+	webserver.on("/command.js", HTTP_GET, [](AsyncWebServerRequest *request)
+				 { request->send(SPIFFS, "/command.js", "text/js"); }); // Serve "command.js" for root page to accessj
 	webserver.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)
 				 { request->send(SPIFFS, "/favicon.ico", "image/png"); }); // Serve tab icon
 	webserver.onNotFound(notFound);										   // Set up basic 404NotFound page
