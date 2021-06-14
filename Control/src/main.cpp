@@ -29,6 +29,8 @@
 #define TX2pin 16 // Pin 9 on expansion board, UART2
 #define RX3pin 14 // Pin 10 on expansion board, UART3
 #define TX3pin 4  // Pin 11 on expansion board, UART3
+#define RX4pin 15 // Pin 12 on expansion board, UART4
+#define TX4pin 2  // Pin 13 on expansion board, UART4
 #pragma endregion
 
 #pragma region Function Declarations
@@ -42,6 +44,7 @@ void sendToEnergy(bool instruction);
 void recvFromEnergy();
 void sendToVision();
 void recvFromVision();
+void recvFromCompass();
 void emergencyStop();
 #pragma endregion
 
@@ -49,7 +52,7 @@ void emergencyStop();
 AsyncWebServer webserver(80);
 WebSocketsServer websocketserver(81);
 Ticker ticker;
-SoftwareSerial Serial3;
+SoftwareSerial Serial3, Serial4;
 std::queue<RoverInstruction> InstrQueue;
 #pragma endregion
 
@@ -75,10 +78,11 @@ void setup()
 	esp_log_level_set("wifi", ESP_LOG_WARN);  // enable WARN logs from WiFi stack
 	esp_log_level_set("dhcpc", ESP_LOG_INFO); // enable INFO logs from DHCP client
 
-	Serial.begin(115200);							   // Set up hardware UART0 (Connected to USB port)
-	Serial1.begin(9600, SERIAL_8N1, RX1pin, TX1pin);   // Set up hardware UART1 (Connected to Drive)
-	Serial2.begin(9600, SERIAL_8N1, RX2pin, TX2pin);   // Set up hardware UART2 (Connected to Energy)
-	Serial3.begin(9600, SWSERIAL_8N1, RX3pin, TX3pin); // Set up software UART3 (Connected to Vision)
+	Serial.begin(115200);								 // Set up hardware UART0 (Connected to USB port)
+	Serial1.begin(9600, SERIAL_8N1, RX1pin, TX1pin);	 // Set up hardware UART1 (Connected to Drive)
+	Serial2.begin(9600, SERIAL_8N1, RX2pin, TX2pin);	 // Set up hardware UART2 (Connected to Energy)
+	Serial3.begin(9600, SWSERIAL_8N1, RX3pin, TX3pin);	 // Set up software UART3 (Connected to Vision)
+	Serial4.begin(115200, SWSERIAL_8N1, RX4pin, TX4pin); // Set up software UART4 (Connected to Compass)
 
 	// Set global variable startup values
 	Status = CS_IDLE;
@@ -131,7 +135,8 @@ void loop()
 	websocketserver.loop(); // Handle incoming client connections
 	recvFromDrive();		// Update stats from Drive
 	recvFromEnergy();		// Update stats from Energy
-	recvFromVision();		// Update stats from Vision
+	// recvFromVision();		// Update stats from Vision
+	recvFromCompass();		// Update stats from Compass
 	switch (Status)
 	{
 	case CS_ERROR:
@@ -213,10 +218,9 @@ void loop()
 		{
 			Status = CS_IDLE;
 			lastCompletedCommand = lastExecutedCommand; // Update last completed command
-			sendToEnergy(0); // Stop charging if goal reached
+			sendToEnergy(0);							// Stop charging if goal reached
 		}
 		// Otherwise continue charging, no change
-		
 	}
 	break;
 	default:
@@ -306,7 +310,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			instr.instr = INSTR_CHARGE;
 			instr.charge = rdoc["rC"];
 			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"]
-      
+
 			queueInstruction(instr); // Put charge command in InstrQueue
 		}
 		break;
@@ -416,6 +420,16 @@ void recvFromVision() // Update bounding box and obstacle detection data from Vi
 		bb_bottom = rdoc["bb"][3];
 		bb_centre_x = rdoc["cen"][0];
 		bb_centre_y = rdoc["cen"][1];
+		heading = rdoc["cH"];
+	}
+}
+
+void recvFromCompass()
+{
+	if (Serial4.available())
+	{
+		DynamicJsonDocument rdoc(128);
+		deserializeJson(rdoc, Serial4);
 		heading = rdoc["cH"];
 	}
 }
