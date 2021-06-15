@@ -130,9 +130,9 @@
                         </tr>
                         
                         <tr>
-                            <td style="text-align: center;" colspan="2"><button style="color: red;">Emergency<br>Stop</button></td>
-                            <td style="text-align: center;" colspan="2"><button>Telemetry<br>Reset</button></td>
-                            <td style="text-align: center;" colspan="2"><button>Full<br>Charge</button></td>
+                            <td style="text-align: center;" colspan="2"><button onclick="setCmdMode(0); stpCmd();" style="color: red;">Emergency<br>Stop</button></td>
+                            <td style="text-align: center;" colspan="2"><button onclick="setCmdMode(-1); telRst();">Telemetry<br>Reset</button></td>
+                            <td style="text-align: center;" colspan="2"><button onclick="setCmdMode(2); chrgCmd(100);">Full<br>Charge</button></td>
                         </tr>
                         <tr><td colspan="6"><hr></td></tr>
                         <tr>
@@ -275,6 +275,8 @@
             rStatus = "Moving";
         }else if(state == 2){
             rStatus = "Charging";
+        }else if(state == 3){
+            rStatus = "Waiting";
         }else{
             rStatus = "Undefined";
         }
@@ -306,6 +308,12 @@
             bufferOutput = document.getElementById("commandInput").value;
         }else if(cmdMode == 1){
             bufferOutput = "move " + reqDistance + "mm " + reqHeading + "deg " + reqSpeed + "%";
+        }else if(cmdMode == 2){
+            bufferOutput = "charge " + reqCharge + "%";
+        }else if(cmdMode == 3){
+            bufferOutput = "wait " + pstop_time + "s";
+        }else if(cmdMode == -1){
+            bufferOutput = "telemetry reset";
         }
         if((mode == 1) || (mode == -1) || (mode == 2) || (mode == 3)){
             document.getElementById("command_buffer").innerHTML += '[' + command_id + '] ' + bufferOutput + "<br>";

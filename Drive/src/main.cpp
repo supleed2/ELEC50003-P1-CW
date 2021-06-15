@@ -456,6 +456,10 @@ void loop()
       }else if (rdoc.containsKey("cH")){
         currentHeading = 180 + int(rdoc["cH"]);
         // Serial.println(currentHeading);
+      }else if (rdoc.containsKey("stp") && rdoc["stp"] == 1){
+        digitalWrite(pwmr, LOW);
+        digitalWrite(pwml, LOW);
+        commandCompletionStatus = 3;
       }
     }
   }
