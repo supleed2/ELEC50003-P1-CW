@@ -1,19 +1,21 @@
 %lex
 %%
 
-\s                      return 'whitespace'
-\b[0-9]+"mm"\b                return 'distance'
-\b([0-9]|[1-8][0-9]|9[0-9]|[12][0-9]{2}|3[0-4][0-9]|35[0-9])"deg"\b  return 'heading_angle'
-\b([0-9]|[1-8][0-9]|9[0-9]|100)"%"   return 'percentage'
-\b[0-9]+"s"\b           return 'stop_duration'
-\bmove\b                  return 'move'
-\bpstop\b                 return 'pstop'
-\bstop\b                  return 'stop'
-\bhelp\b                return 'help'
-\bcharge\sto\b                return 'charge_to'
-\btelemetry\sreset\b      return 'telemetry_reset'
-<<EOF>>                 return 'EOF'
-.                       return 'invalid_command'
+\s                                                               return 'whitespace'
+("-"[0-9]+"mm"|[0-9]+"mm")                                       return 'distance'
+([0-9]|[1-8][0-9]|9[0-9]|[12][0-9]{2}|3[0-4][0-9]|35[0-9])"deg"  return 'heading_angle'
+([0-9]|[1-8][0-9]|9[0-9]|100)"%"                                 return 'percentage'
+[0-9]+"s"                                                        return 'stop_duration'
+move                                                             return 'move'
+pstop                                                            return 'pstop'
+stop                                                             return 'stop'
+help                                                             return 'help'
+charge\sto                                                       return 'charge_to'
+telemetry\sreset                                                 return 'telemetry_reset'
+colour                                                           return 'colour'
+("red"|"blue"|"green"|"pink"|"orange")                           return 'colour_name'
+<<EOF>>                                                          return 'EOF'
+.                                                                return 'invalid_command'
 
 /lex
 
@@ -46,6 +48,11 @@ expr
         {
             var inChrg = Number(String($3).substr(0, ((String($3).length) - 1)));
             chrgCmd(inChrg);
+        }
+    | colour whitespace colour_name
+        {
+            var inColour = String($3);
+            colourCmd(inColour);
         }
     | telemetry_reset
         {   
