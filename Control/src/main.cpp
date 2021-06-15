@@ -1,6 +1,7 @@
 #pragma region Includes
 #include <Arduino.h>
 #include <string>
+#include <SoftwareSerial.h> // Software Serial not currently needed
 #include <SoftwareSerial.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -22,12 +23,14 @@
 #pragma endregion
 
 #pragma region Definitions eg pins
-#define RX1pin 18 // Pin 6 on expansion board, UART1
-#define TX1pin 5  // Pin 7 on expansion board, UART1
-#define RX2pin 17 // Pin 8 on expansion board, UART2
-#define TX2pin 16 // Pin 9 on expansion board, UART2
+#define RX1pin 17 // Pin 6 on expansion board, UART1
+#define TX1pin 16 // Pin 7 on expansion board, UART1
+#define RX2pin 18 // Pin 8 on expansion board, UART2
+#define TX2pin 5 // Pin 9 on expansion board, UART2
 #define RX3pin 14 // Pin 10 on expansion board, UART3
 #define TX3pin 4  // Pin 11 on expansion board, UART3
+#define RX4pin 15 // Pin 12 on expansion board, UART4
+#define TX4pin 2  // Pin 13 on expansion board, UART4
 #pragma endregion
 
 #pragma region Function Declarations
@@ -41,6 +44,7 @@ void sendToEnergy(bool instruction);
 void recvFromEnergy();
 void sendToVision();
 void recvFromVision();
+void recvFromCompass();
 void emergencyStop();
 #pragma endregion
 
@@ -48,7 +52,7 @@ void emergencyStop();
 AsyncWebServer webserver(80);
 WebSocketsServer websocketserver(81);
 Ticker ticker;
-SoftwareSerial Serial3;
+SoftwareSerial Serial3, Serial4;
 std::queue<RoverInstruction> InstrQueue;
 #pragma endregion
 
@@ -75,10 +79,11 @@ void setup()
 	esp_log_level_set("wifi", ESP_LOG_WARN);  // enable WARN logs from WiFi stack
 	esp_log_level_set("dhcpc", ESP_LOG_INFO); // enable INFO logs from DHCP client
 
-	Serial.begin(115200);							   // Set up hardware UART0 (Connected to USB port)
-	Serial1.begin(9600, SERIAL_8N1, RX1pin, TX1pin);   // Set up hardware UART1 (Connected to Drive)
-	Serial2.begin(9600, SERIAL_8N1, RX2pin, TX2pin);   // Set up hardware UART2 (Connected to Energy)
-	Serial3.begin(9600, SWSERIAL_8N1, RX3pin, TX3pin); // Set up software UART3 (Connected to Vision)
+	Serial.begin(115200);								 // Set up hardware UART0 (Connected to USB port)
+	Serial1.begin(9600, SERIAL_8N1, RX1pin, TX1pin);	 // Set up hardware UART1 (Connected to Drive)
+	Serial2.begin(9600, SERIAL_8N1, RX2pin, TX2pin);	 // Set up hardware UART2 (Connected to Energy)
+	Serial3.begin(9600, SWSERIAL_8N1, RX3pin, TX3pin);	 // Set up software UART3 (Connected to Vision)
+	Serial4.begin(9600, SWSERIAL_8N1, RX4pin, TX4pin); // Set up software UART4 (Connected to Compass)
 
 	// Set global variable startup values
 	Status = CS_IDLE;
@@ -108,15 +113,17 @@ void setup()
 	{
 		delay(500);
 	}
-	while (!MDNS.begin("rover")) // Set up mDNS cast at "rover.local/"
+	while (!MDNS.begin("rover2")) // Set up mDNS cast at "rover.local/"
 	{
 		Serial.println("Error setting up mDNS, retrying in 5s");
 		delay(5000);
 	}
-	Serial.println("mDNS set up, access Control Panel at 'rover.local/'");
+	Serial.println("mDNS set up, access Control Panel at 'rover2.local/'");
 
 	webserver.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
 				 { request->send(SPIFFS, "/index.html", "text/html"); }); // Serve "index.html" at root page
+	webserver.on("/command.js", HTTP_GET, [](AsyncWebServerRequest *request)
+				 { request->send(SPIFFS, "/command.js", "text/js"); }); // Serve "command.js" for root page to accessj
 	webserver.on("/favicon.ico", HTTP_GET, [](AsyncWebServerRequest *request)
 				 { request->send(SPIFFS, "/favicon.ico", "image/png"); }); // Serve tab icon
 	webserver.onNotFound(notFound);										   // Set up basic 404NotFound page
@@ -132,7 +139,8 @@ void loop()
 	websocketserver.loop(); // Handle incoming client connections
 	recvFromDrive();		// Update stats from Drive
 	recvFromEnergy();		// Update stats from Energy
-	recvFromVision();		// Update stats from Vision
+	// recvFromVision();		// Update stats from Vision
+	recvFromCompass();		// Update stats from Compass
 	switch (Status)
 	{
 	case CS_ERROR:
@@ -195,6 +203,7 @@ void loop()
 			break;
 			}
 			lastExecutedCommand = instr->id; // Update tracker of last processed command
+			InstrQueue.pop();
 		}
 	}
 	break;
@@ -242,7 +251,7 @@ void loop()
 	}
 	break;
 	}
-	delay(500);
+	// delay(500);
 }
 
 void notFound(AsyncWebServerRequest *request)
@@ -447,13 +456,20 @@ void recvFromVision() // Update bounding box and obstacle detection data from Vi
 	}
 }
 
+void recvFromCompass()
+{
+	if (Serial4.available())
+	{
+		DynamicJsonDocument rdoc(1024);
+		deserializeJson(rdoc, Serial4);
+		heading = rdoc["cH"];
+	}
+}
+
 void emergencyStop()
 {
 	DynamicJsonDocument tdoc(1024);
-	tdoc["rH"] = heading;
-	tdoc["dist"] = -1;
-	tdoc["sp"] = -1;
-	tdoc["cH"] = heading;
+	tdoc["stp"] = 1;
 	serializeJson(tdoc, Serial1); // Send stop signals to Drive
 	sendToEnergy(0);			  // Send stop signal to Energy
 	while (InstrQueue.size())
