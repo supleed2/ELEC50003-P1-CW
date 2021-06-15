@@ -5,7 +5,8 @@ typedef enum {
     CS_ERROR = -1,
     CS_IDLE,
     CS_MOVING,
-    CS_CHARGING
+    CS_CHARGING,
+    CS_WAITING
 } ControlStatus_t;
 
 #endif

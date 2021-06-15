@@ -13,6 +13,7 @@
 #include <SPIFFS.h>
 #include "status.h"
 #include "instruction.h"
+#include "colour.h"
 #include <queue>
 #pragma endregion
 
@@ -26,7 +27,7 @@
 #define RX1pin 17 // Pin 6 on expansion board, UART1
 #define TX1pin 16 // Pin 7 on expansion board, UART1
 #define RX2pin 18 // Pin 8 on expansion board, UART2
-#define TX2pin 5 // Pin 9 on expansion board, UART2
+#define TX2pin 5  // Pin 9 on expansion board, UART2
 #define RX3pin 14 // Pin 10 on expansion board, UART3
 #define TX3pin 4  // Pin 11 on expansion board, UART3
 #define RX4pin 15 // Pin 12 on expansion board, UART4
@@ -45,6 +46,7 @@ void recvFromEnergy();
 void sendToVision();
 void recvFromVision();
 void recvFromCompass();
+void updateRSSI();
 void emergencyStop();
 #pragma endregion
 
@@ -70,6 +72,8 @@ bool driveCommandComplete;
 int bb_left, bb_right, bb_top, bb_bottom;
 int bb_centre_x, bb_centre_y;
 float chargeGoal;
+int waitGoal;
+Colour_t colour;
 #pragma endregion
 
 void setup()
@@ -78,10 +82,10 @@ void setup()
 	esp_log_level_set("wifi", ESP_LOG_WARN);  // enable WARN logs from WiFi stack
 	esp_log_level_set("dhcpc", ESP_LOG_INFO); // enable INFO logs from DHCP client
 
-	Serial.begin(115200);								 // Set up hardware UART0 (Connected to USB port)
-	Serial1.begin(9600, SERIAL_8N1, RX1pin, TX1pin);	 // Set up hardware UART1 (Connected to Drive)
-	Serial2.begin(9600, SERIAL_8N1, RX2pin, TX2pin);	 // Set up hardware UART2 (Connected to Energy)
-	Serial3.begin(9600, SWSERIAL_8N1, RX3pin, TX3pin);	 // Set up software UART3 (Connected to Vision)
+	Serial.begin(115200);							   // Set up hardware UART0 (Connected to USB port)
+	Serial1.begin(9600, SERIAL_8N1, RX1pin, TX1pin);   // Set up hardware UART1 (Connected to Drive)
+	Serial2.begin(9600, SERIAL_8N1, RX2pin, TX2pin);   // Set up hardware UART2 (Connected to Energy)
+	Serial3.begin(9600, SWSERIAL_8N1, RX3pin, TX3pin); // Set up software UART3 (Connected to Vision)
 	Serial4.begin(9600, SWSERIAL_8N1, RX4pin, TX4pin); // Set up software UART4 (Connected to Compass)
 
 	// Set global variable startup values
@@ -98,6 +102,8 @@ void setup()
 	lastCompletedCommand = 0;
 	driveCommandComplete = 1;
 	chargeGoal = 0;
+	waitGoal = 0;
+	colour = C_RED;
 
 	if (!SPIFFS.begin(true)) // Mount SPIFFS
 	{
@@ -139,6 +145,7 @@ void loop()
 	recvFromEnergy();		// Update stats from Energy
 	// recvFromVision();		// Update stats from Vision
 	recvFromCompass();		// Update stats from Compass
+	updateRSSI();
 	switch (Status)
 	{
 	case CS_ERROR:
@@ -188,6 +195,18 @@ void loop()
 				sendToEnergy(1);				   // Forward to Energy handler
 			}
 			break;
+			case INSTR_WAIT: // Normal wait
+			{
+				Status = CS_WAITING;						// Set waiting state
+				waitGoal = millis() + 1000 * (instr->time); // Set wait time
+			}
+			break;
+			case INSTR_COLOUR:
+			{
+				Status = CS_IDLE;
+				colour = (Colour_t)instr->colour;
+			}
+			break;
 			default:
 			{
 				Serial.println("Unknown instruction type in queue, skipping...");
@@ -224,6 +243,16 @@ void loop()
 			sendToEnergy(0);							// Stop charging if goal reached
 		}
 		// Otherwise continue charging, no change
+	}
+	break;
+	case CS_WAITING:
+	{
+		if (millis() >= waitGoal) // Compare waitGoal to current time
+		{
+			Status = CS_IDLE;
+			lastCompletedCommand = lastExecutedCommand; // Update last completed command
+		}
+		// Otherwise continue waiting, no change
 	}
 	break;
 	default:
@@ -279,7 +308,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			Serial.println("Reset telemetry command received");
 			instr.id = rdoc["Cid"];
 			instr.instr = INSTR_RESET;
-			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
+			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"], rdoc["pSt"]
 
 			queueInstruction(instr); // Put reset command in InstrQueue
 		}
@@ -288,7 +317,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 		{
 			Serial.println("Emergency stop command received");
 			// instr.instr = INSTR_STOP; // Not needed as Emergency Stop is not queued
-			// Ignore rdoc["Cid"], rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
+			// Ignore rdoc["Cid"], rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"], rdoc["pSt"]
 
 			emergencyStop();
 		}
@@ -301,7 +330,7 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			instr.heading = rdoc["rH"];
 			instr.distance = rdoc["rD"];
 			instr.speed = rdoc["rS"];
-			// Ignore rdoc["rC"]
+			// Ignore rdoc["rC"], rdoc["pSt"]
 
 			queueInstruction(instr); // Put movement command in InstrQueue
 		}
@@ -312,7 +341,29 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			instr.id = rdoc["Cid"];
 			instr.instr = INSTR_CHARGE;
 			instr.charge = rdoc["rC"];
-			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"]
+			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["pSt"]
+
+			queueInstruction(instr); // Put charge command in InstrQueue
+		}
+		break;
+		case 3: // Normal wait command, results in no motion, added to end of command cache
+		{
+			Serial.println("Normal wait command received");
+			instr.id = rdoc["Cid"];
+			instr.instr = INSTR_WAIT;
+			instr.time = rdoc["pSt"];
+			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
+
+			queueInstruction(instr); // Put charge command in InstrQueue
+		}
+		break;
+		case 4: // Normal wait command, results in no motion, added to end of command cache
+		{
+			Serial.println("Change colour tracking command received");
+			instr.id = rdoc["Cid"];
+			instr.instr = INSTR_COLOUR;
+			instr.colour = rdoc["col"];
+			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
 
 			queueInstruction(instr); // Put charge command in InstrQueue
 		}
@@ -408,7 +459,7 @@ void recvFromEnergy() // Update telemetry data and state info from Energy packet
 
 void sendToVision()
 {
-	Serial3.print("R"); // Request new data from Vision
+	Serial3.print(colour); // Select coloured ball to track
 }
 
 void recvFromVision() // Update bounding box and obstacle detection data from Vision packet
@@ -435,6 +486,11 @@ void recvFromCompass()
 		deserializeJson(rdoc, Serial4);
 		heading = rdoc["cH"];
 	}
+}
+
+void updateRSSI()
+{
+	signalStrength = WiFi.RSSI();
 }
 
 void emergencyStop()
