@@ -1,0 +1,22 @@
+data = csvread ( "charge.csv");
+soc1 = data(:,6);
+voltage2 = data(:,2);
+
+data = csvread ( "discharge.csv");
+current = data(:,2);
+voltage = data(:,1);
+
+x = 0:47771;
+
+power = current.*voltage;
+
+
+
+figure;
+hold on;
+plot(x, voltage, 'x');
+xlabel('SOC (%)');
+ylabel(' (mV)');
+title('Charge cycle of a LiFePO4 battery');
+set(gca,'FontSize',25);
+hold off;

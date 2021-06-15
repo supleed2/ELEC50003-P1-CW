@@ -1,0 +1,15 @@
+data = csvread ( "pvlast.csv");
+voltage = data(:,7);
+current = data(:,3);
+
+power = current.*
+
+
+
+figure;
+plot(voltage, abs(current), 'x');
+xlabel('voltage (mV)');
+ylabel('current (mA)');
+title('PV panel IV characteristic');
+set(gca,'FontSize',25);
+
