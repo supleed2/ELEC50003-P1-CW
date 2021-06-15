@@ -75,9 +75,9 @@ var command = (function(){
 var o=function(k,v,o,l){for(o=o||{},l=k.length;l--;o[k[l]]=v);return o};
 var parser = {trace: function trace () { },
 yy: {},
-symbols_: {"error":2,"command":3,"expr":4,"EOF":5,"move":6,"whitespace":7,"distance":8,"heading_angle":9,"percentage":10,"stop":11,"pstop":12,"stop_duration":13,"charge_to":14,"telemetry_reset":15,"help":16,"$accept":0,"$end":1},
-terminals_: {2:"error",5:"EOF",6:"move",7:"whitespace",8:"distance",9:"heading_angle",10:"percentage",11:"stop",12:"pstop",13:"stop_duration",14:"charge_to",15:"telemetry_reset",16:"help"},
-productions_: [0,[3,2],[4,7],[4,1],[4,3],[4,3],[4,1],[4,1]],
+symbols_: {"error":2,"command":3,"expr":4,"EOF":5,"move":6,"whitespace":7,"distance":8,"heading_angle":9,"percentage":10,"stop":11,"pstop":12,"stop_duration":13,"charge_to":14,"colour":15,"colour_name":16,"telemetry_reset":17,"help":18,"$accept":0,"$end":1},
+terminals_: {2:"error",5:"EOF",6:"move",7:"whitespace",8:"distance",9:"heading_angle",10:"percentage",11:"stop",12:"pstop",13:"stop_duration",14:"charge_to",15:"colour",16:"colour_name",17:"telemetry_reset",18:"help"},
+productions_: [0,[3,2],[4,7],[4,1],[4,3],[4,3],[4,3],[4,1],[4,1]],
 performAction: function anonymous(yytext, yyleng, yylineno, yy, yystate /* action[1] */, $$ /* vstack */, _$ /* lstack */) {
 /* this == yyval */
 
@@ -109,19 +109,25 @@ case 5:
         
 break;
 case 6:
+
+            var inColour = String($$[$0]);
+            colourCmd(inColour);
+        
+break;
+case 7:
    
             telRst();
         
 break;
-case 7:
+case 8:
 
             printHelpDetails();
         
 break;
 }
 },
-table: [{3:1,4:2,6:[1,3],11:[1,4],12:[1,5],14:[1,6],15:[1,7],16:[1,8]},{1:[3]},{5:[1,9]},{7:[1,10]},{5:[2,3]},{7:[1,11]},{7:[1,12]},{5:[2,6]},{5:[2,7]},{1:[2,1]},{8:[1,13]},{13:[1,14]},{10:[1,15]},{7:[1,16]},{5:[2,4]},{5:[2,5]},{9:[1,17]},{7:[1,18]},{10:[1,19]},{5:[2,2]}],
-defaultActions: {4:[2,3],7:[2,6],8:[2,7],9:[2,1],14:[2,4],15:[2,5],19:[2,2]},
+table: [{3:1,4:2,6:[1,3],11:[1,4],12:[1,5],14:[1,6],15:[1,7],17:[1,8],18:[1,9]},{1:[3]},{5:[1,10]},{7:[1,11]},{5:[2,3]},{7:[1,12]},{7:[1,13]},{7:[1,14]},{5:[2,7]},{5:[2,8]},{1:[2,1]},{8:[1,15]},{13:[1,16]},{10:[1,17]},{16:[1,18]},{7:[1,19]},{5:[2,4]},{5:[2,5]},{5:[2,6]},{9:[1,20]},{7:[1,21]},{10:[1,22]},{5:[2,2]}],
+defaultActions: {4:[2,3],8:[2,7],9:[2,8],10:[2,1],16:[2,4],17:[2,5],18:[2,6],22:[2,2]},
 parseError: function parseError (str, hash) {
     if (hash.recoverable) {
         this.trace(str);
@@ -612,20 +618,24 @@ case 6:return 12
 break;
 case 7:return 11
 break;
-case 8:return 16
+case 8:return 18
 break;
 case 9:return 14
 break;
-case 10:return 15
+case 10:return 17
 break;
-case 11:return 5
+case 11:return 15
 break;
-case 12:return 'invalid_command'
+case 12:return 16
+break;
+case 13:return 5
+break;
+case 14:return 'invalid_command'
 break;
 }
 },
-rules: [/^(?:\s)/,/^(?:\b[0-9]+mm\b)/,/^(?:\b([0-9]|[1-8][0-9]|9[0-9]|[12][0-9]{2}|3[0-4][0-9]|35[0-9])deg\b)/,/^(?:\b([0-9]|[1-8][0-9]|9[0-9]|100)%)/,/^(?:\b[0-9]+s\b)/,/^(?:\bmove\b)/,/^(?:\bpstop\b)/,/^(?:\bstop\b)/,/^(?:\bhelp\b)/,/^(?:\bcharge\sto\b)/,/^(?:\btelemetry\sreset\b)/,/^(?:$)/,/^(?:.)/],
-conditions: {"INITIAL":{"rules":[0,1,2,3,4,5,6,7,8,9,10,11,12],"inclusive":true}}
+rules: [/^(?:\s)/,/^(?:(-[0-9]+mm|[0-9]+mm))/,/^(?:([0-9]|[1-8][0-9]|9[0-9]|[12][0-9]{2}|3[0-4][0-9]|35[0-9])deg\b)/,/^(?:([0-9]|[1-8][0-9]|9[0-9]|100)%)/,/^(?:[0-9]+s\b)/,/^(?:move\b)/,/^(?:pstop\b)/,/^(?:stop\b)/,/^(?:help\b)/,/^(?:charge\sto\b)/,/^(?:telemetry\sreset\b)/,/^(?:colour\b)/,/^(?:(red|blue|green|pink|orange))/,/^(?:$)/,/^(?:.)/],
+conditions: {"INITIAL":{"rules":[0,1,2,3,4,5,6,7,8,9,10,11,12,13,14],"inclusive":true}}
 });
 return lexer;
 })();

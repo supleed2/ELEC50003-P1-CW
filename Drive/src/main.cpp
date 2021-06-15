@@ -124,19 +124,20 @@ int distance_y = 0;
 
 int dist_to_move_prev_fl = 0;
 int dist_to_move_prev_fr = 0;
+int dist_to_move_acc_fl = 0;
+int dist_to_move_acc_fr = 0;
 unsigned long time_pid_prev_fl = 0;
 unsigned long time_pid_prev_fr = 0;
 
-int dist_to_move_prev_sl = 0;
-int dist_to_move_prev_sr = 0;
-unsigned long time_pid_prev_sl = 0;
-unsigned long time_pid_prev_sr = 0;
+int angle_to_move_prev = 0;
+unsigned long time_pid_prev_ang = 0;
 
-float kpdrive = 0.055;
-float kddrive = 4.700;
+float kpdrive = 0.059;
+float kddrive = 7.900;
+float kidrive = 0.0000009;
 
-float kpheading = 0.055;
-float kdheading = 4.700;
+float kpheading = 0.037;
+float kdheading = 3.60;
 
 volatile byte movementflag = 0;
 volatile int xydat[2];
@@ -152,8 +153,8 @@ void mousecam_write_reg(int reg, int val);
 int mousecam_read_reg(int reg);
 void mousecam_reset();
 int getCurrentHeading();
-float pid_ms(int dist_to_move, int *dist_to_move_prev, unsigned long *time_pid_prev, float kps, float kds);
-float pid_h_ms(bool left, float speed, int dist_to_move, int *dist_to_move_prev, unsigned long *time_pid_prev, float kps, float kds);
+float pid_ms(int dist_to_move, int *dist_to_move_prev, int *dist_to_move_acc, unsigned long *time_pid_prev, float kps, float kds, float kis);
+float pid_rotation(int angle_to_move, int *angle_to_move_prev, unsigned long *time_pid_prev, float kps, float kds);
 
 int convTwosComp(int b)
 {
@@ -293,7 +294,6 @@ int distTravelled_mm = 0;
 bool initialAngleSet = false;
 
 //calibration varibles
-int angularDrift = 0; //+ve to right, -ve to left
 int leftStart = 80;   //pwm min for left motor
 int leftStop = 255;   //pwm max for left motor
 int rightStart = 80;  //pwm min for right motor
@@ -423,11 +423,11 @@ DynamicJsonDocument rdoc(1024);
 
 void loop()
 {
-  if (Serial1.available() && (commandCompletionStatus == 0)){
+  if (Serial1.available() && ((commandCompletionStatus == 0)||(commandCompletionStatus == 2))){
     // receive doc, not sure how big this needs to be
     error = deserializeJson(rdoc, Serial1);
 
-    Serial.println("Got serial");
+    //Serial.println("Got serial");
 
     // Test if parsing succeeds.
     if (error)
@@ -438,19 +438,33 @@ void loop()
     }
     else
     {
-      //parsing success, prepare command and pull request information
-      commandCompletionStatus = 1;
-      requiredHeading = rdoc["rH"];
-      distance = rdoc["dist"];
-      spd = rdoc["sp"];
-      currentHeading = rdoc["cH"];
+      if(rdoc.containsKey("sp") && rdoc["rH"] != -1){
+        //parsing success, prepare command and pull request information
+        commandCompletionStatus = 1;
+        requiredHeading = rdoc["rH"];
+        distance = rdoc["dist"];
+        spd = rdoc["sp"];
+        currentHeading = int(rdoc["cH"]) + 180;
 
-      Serial.println("rH = " + String(requiredHeading) + " dist = " + String(distance) + " speed = " + String(spd));
+        Serial.println("rH = " + String(requiredHeading) + " dist = " + String(distance) + " speed = " + String(spd));
 
-      //reset variables for update on completion
-      commandComplete = 0;
-      powerUsage_mWh = 0.0;
-      distTravelled_mm = 0;
+        //reset variables for update on completion
+        commandComplete = 0;
+        powerUsage_mWh = 0.0;
+        dist_to_move_acc_fl = 0;
+        dist_to_move_acc_fr = 0;
+      }else if (rdoc.containsKey("cH")){
+        currentHeading = 180 + int(rdoc["cH"]);
+        // Serial.println(currentHeading);
+      }else if (rdoc.containsKey("stp") && rdoc["stp"] == 1){
+        digitalWrite(pwmr, LOW);
+        digitalWrite(pwml, LOW);
+        commandCompletionStatus = 3;
+      }else if (rdoc.containsKey("rstD") && rdoc["rstD"] == 1){
+        goal_x = 0;
+        goal_y = 0;
+        distTravelled_mm = 0;
+      }
     }
   }
 
@@ -464,7 +478,7 @@ void loop()
     //Serial.println("status0");
   }
   if (commandCompletionStatus == 1)
-  { Serial.println("status1");
+  { //Serial.println("status1");
     //newCommand
     //set goals
     goal_x += distance * sin(requiredHeading);
@@ -486,17 +500,21 @@ void loop()
       //turn to angle
       if (currentHeading < requiredHeading)
       { //turn right
-        Serial.println("turning right");
-        analogWrite(pwmr, getPWMfromSpeed(spd, false));
-        analogWrite(pwml, getPWMfromSpeed(spd, true));
+        //Serial.println("turning right");
+        //Serial.println(currentHeading);
+        float spd_pid = pid_rotation(abs(currentHeading - requiredHeading), &angle_to_move_prev, &time_pid_prev_ang, kpheading, kdheading);
+        analogWrite(pwmr, getPWMfromSpeed(spd_pid, false));
+        analogWrite(pwml, getPWMfromSpeed(spd_pid, true));
         digitalWrite(DIRR, LOW);
         digitalWrite(DIRL, LOW);
       }
       else if (currentHeading > requiredHeading)
       { //turn left
-        Serial.println("turning left");
-        analogWrite(pwmr, getPWMfromSpeed(spd, false));
-        analogWrite(pwml, getPWMfromSpeed(spd, true));
+        //Serial.println("turning left");
+        //Serial.println(currentHeading);
+        float spd_pid = pid_rotation(abs(currentHeading - requiredHeading), &angle_to_move_prev, &time_pid_prev_ang, kpheading, kdheading);
+        analogWrite(pwmr, getPWMfromSpeed(spd_pid, false));
+        analogWrite(pwml, getPWMfromSpeed(spd_pid, true));
         digitalWrite(DIRR, HIGH);
         digitalWrite(DIRL, HIGH);
       }
@@ -515,10 +533,8 @@ void loop()
       if (total_y - distance < 0)
       { //go forwards
         //Serial.println("going forwards");
-        float speed_r = pid_ms(abs(total_y - distance), &dist_to_move_prev_fr, &time_pid_prev_fr, kpdrive, kddrive);
-        float speed_l = pid_ms(abs(total_y - distance), &dist_to_move_prev_fl, &time_pid_prev_fl, kpdrive, kddrive);
-        float speed_r_head = pid_h_ms(0, speed_r, -total_x, &dist_to_move_prev_sr, &time_pid_prev_sr, kpheading, kdheading);
-        float speed_l_head = pid_h_ms(1, speed_l, -total_x, &dist_to_move_prev_sl, &time_pid_prev_sl, kpheading, kdheading); 
+        float speed_r = pid_ms(abs(total_y - distance), &dist_to_move_prev_fr, &dist_to_move_acc_fr, &time_pid_prev_fr, kpdrive, kddrive, kidrive);
+        float speed_l = pid_ms(abs(total_y - distance), &dist_to_move_prev_fl, &dist_to_move_acc_fl, &time_pid_prev_fl, kpdrive, kddrive, kidrive);
         analogWrite(pwmr, getPWMfromSpeed(speed_r, false));
         analogWrite(pwml, getPWMfromSpeed(speed_l, true));
         digitalWrite(DIRR, LOW);
@@ -527,10 +543,8 @@ void loop()
       else if (total_y - distance > 0)
       { //go backwards
         //Serial.println("going backwards");
-        float speed_r = pid_ms(abs(total_y - distance), &dist_to_move_prev_fr, &time_pid_prev_fr, kpdrive, kddrive);
-        float speed_l = pid_ms(abs(total_y - distance), &dist_to_move_prev_fl, &time_pid_prev_fl, kpdrive, kddrive);
-        float speed_r_head = pid_h_ms(0, speed_r, -total_x, &dist_to_move_prev_sr, &time_pid_prev_sr, kpheading, kdheading);
-        float speed_l_head = pid_h_ms(1, speed_l, -total_x, &dist_to_move_prev_sl, &time_pid_prev_sl, kpheading, kdheading); 
+        float speed_r = pid_ms(abs(total_y - distance), &dist_to_move_prev_fr, &dist_to_move_acc_fr, &time_pid_prev_fr, kpdrive, kddrive, kidrive);
+        float speed_l = pid_ms(abs(total_y - distance), &dist_to_move_prev_fl, &dist_to_move_acc_fl, &time_pid_prev_fl, kpdrive, kddrive, kidrive);
         analogWrite(pwmr, getPWMfromSpeed(speed_r, false));
         analogWrite(pwml, getPWMfromSpeed(speed_l, true));
         digitalWrite(DIRR, HIGH);
@@ -547,7 +561,7 @@ void loop()
     }
   }
   if (commandCompletionStatus == 3)
-  { Serial.println("status3");
+  { // Serial.println("status3");
     //currentPosMatchesOrExceedsRequest
     ///finish moving
 
@@ -557,7 +571,7 @@ void loop()
     commandComplete = true;
     current_x = goal_x;
     current_y = goal_y;
-    distTravelled_mm += distance;
+    distTravelled_mm += abs(distance);
 
     //compile energy use
     unsigned long currentMillis_Energy = millis();
@@ -585,6 +599,8 @@ void loop()
     tdoc["mm"] = distTravelled_mm;
     tdoc["pos"][0] = current_x;
     tdoc["pos"][1] = current_y;
+    tdoc["bV"] = vb;
+    serializeJson(tdoc, Serial1); // Build JSON and send on UART1
     serializeJson(tdoc, Serial); // Build JSON and send on UART1
     commandCompletionStatus = 0;
   }
@@ -593,7 +609,7 @@ void loop()
   //find motor voltage
   //int motorVSensor = analogRead(A5);
   //float motorVoltage = motorVSensor * (5.0 / 1023.0);
-  float motorVoltage = 5;
+  float motorVoltage = vb;
 
   //find average power
 
@@ -635,7 +651,7 @@ void loop()
   Serial.println(')'); */
 
   // Serial.println(md.max_pix);
-  delay(100);
+  delay(50);
 
   distance_x = md.dx; //convTwosComp(md.dx);
   distance_y = md.dy; //convTwosComp(md.dy);
@@ -715,11 +731,6 @@ void loop()
   }
 }
 
-int getCurrentHeading(){
-  int currentAngle = 0; //-------------___<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-  return currentAngle;
-}
-
 // Timer A CMP1 interrupt. Every 800us the program enters this interrupt.
 // This, clears the incoming interrupt flag and triggers the main loop.
 
@@ -743,9 +754,10 @@ void sampling(){
   // The analogRead process gives a value between 0 and 1023
   // representing a voltage between 0 and the analogue reference which is 4.096V
 
-  vb = sensorValue0 * (4.096 / 1023.0);   // Convert the Vb sensor reading to volts
+  vb = sensorValue0 * (4.94 / 1023.0);   // Convert the Vb sensor reading to volts
   vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
   vpd = sensorValue3 * (4.096 / 1023.0);  // Convert the Vpd sensor reading to volts
+
 
   // The inductor current is in mA from the sensor so we need to convert to amps.
   // We want to treat it as an input current in the Boost, so its also inverted
@@ -831,42 +843,32 @@ float pidi(float pid_input){
 
 // This is a P!ID contrller for motor speed
 
-float pid_ms(int dist_to_move, int *dist_to_move_prev, unsigned long *time_pid_prev, float kps, float kds){
+float pid_ms(int dist_to_move, int *dist_to_move_prev, int *dist_to_move_acc, unsigned long *time_pid_prev, float kps, float kds, float kis){
   
   int T_diff = millis() - *time_pid_prev;
-  float speed = (kps * dist_to_move) + ((kds/T_diff) * (dist_to_move - *dist_to_move_prev));
+  *dist_to_move_acc = *dist_to_move_acc + dist_to_move;
+  float speed = (kps * dist_to_move) + ((kds/T_diff) * (dist_to_move - *dist_to_move_prev)) + ((kis*T_diff) * (*dist_to_move_acc));
   *time_pid_prev = millis();
 
   Serial.println(speed);
 
   if (speed >= 1) speed = 1;
-  else if (speed <= 0.5) speed = 0.5;
+  else if (speed <= 0.55) speed = 0.55;
 
   *dist_to_move_prev = dist_to_move;
   return speed;
 }
 
-// This is a P!ID contrller for heading using optical flow
-
-float pid_h_ms(bool left, float speed, int dist_to_move, int *dist_to_move_prev, unsigned long *time_pid_prev, float kps, float kds){
-  
+float pid_rotation(int angle_to_move, int *angle_to_move_prev, unsigned long *time_pid_prev, float kps, float kds){
   int T_diff = millis() - *time_pid_prev;
-  float speed_aug;
-
-  if ((dist_to_move > 0 && !left )||( dist_to_move < 0 && left)){
-    float speed_aug_mult = (kps * dist_to_move) + ((kds/T_diff) * (dist_to_move - *dist_to_move_prev));
-    if (speed_aug_mult >= 2) speed_aug_mult = 2;
-    else if (speed_aug_mult <= 1) speed_aug_mult = 1;
-    speed_aug = speed / dist_to_move;
-  }else{
-    speed_aug = speed;
-  }
-  
+  float speed = (kps * angle_to_move) + ((kds/T_diff) * (angle_to_move - *angle_to_move_prev));
   *time_pid_prev = millis();
 
-  if (speed_aug >= 1) speed_aug = 1;
-  else if (speed_aug <= 0.3) speed_aug = 0.3;
+  Serial.println(speed);
 
-  *dist_to_move_prev = dist_to_move;
-  return speed_aug;
+  if (speed >= 1) speed = 1;
+  else if (speed <= 0.85) speed = 0.85;
+
+  *angle_to_move_prev = angle_to_move;
+  return speed;
 }

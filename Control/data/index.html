@@ -130,28 +130,28 @@
                         </tr>
                         
                         <tr>
-                            <td style="text-align: center;" colspan="2"><button style="color: red;">Emergency<br>Stop</button></td>
-                            <td style="text-align: center;" colspan="2"><button>Telemetry<br>Reset</button></td>
-                            <td style="text-align: center;" colspan="2"><button>Full<br>Charge</button></td>
+                            <td style="text-align: center;" colspan="2"><button onclick="setCmdMode(0); stpCmd();" style="color: red;">Emergency<br>Stop</button></td>
+                            <td style="text-align: center;" colspan="2"><button onclick="setCmdMode(-1); telRst();">Telemetry<br>Reset</button></td>
+                            <td style="text-align: center;" colspan="2"><button onclick="setCmdMode(2); chrgCmd(100);">Full<br>Charge</button></td>
                         </tr>
                         <tr><td colspan="6"><hr></td></tr>
                         <tr>
                             <td style="text-align: center;" colspan="6"><strong> Set Heading to: </strong><strong id="SetHeading" style="font-size: 18px;">270</strong><strong>&#176;</strong></td>
                         </tr>
                         <tr>
-                            <td colspan="6"><input type ="range" min="0" max="359" value="270" class="slider" id="HdgSlider"></td>
+                            <td colspan="6"><input type ="range" min="0" max="359" value="180" class="slider" id="HdgSlider"></td>
                         </tr>
                         <tr>
                             <td style="text-align: center;" colspan="6"><strong>Set Translation to: </strong><strong id="SetTrans" style="font-size: 18px;">180</strong><strong>mm</strong></td>
                         </tr>
                         <tr>
-                            <td colspan="6"><input type ="range" min="0" max="1000" value="100" class="slider" id="TranSlider"></td>
+                            <td colspan="6"><input type ="range" min="-200" max="200" value="0" class="slider" id="TranSlider"></td>
                         </tr>
                         <tr>
                             <td style="text-align: center;" colspan="6"><strong>Set Speed to: </strong><strong id="SetSpd" style="font-size: 18px;">50</strong><strong>%</strong></td>
                         </tr>
                         <tr>
-                            <td colspan="6"><input type ="range" min="0" max="100" value="50" class="slider" id="SpdSlider"></td>
+                            <td colspan="6"><input type ="range" min="0" max="100" value="100" class="slider" id="SpdSlider"></td>
                         </tr>
                         <tr>
                             <td colspan="6"><button onclick="setCmdMode(1); moveCmd(setTransto, setHdgto, setSpdto);">Send<br>Command</button></td>
@@ -235,6 +235,7 @@
     var reqSpeed = 0;
     var reqCharge = 0;
     var pstop_time = 0;
+    var hunt_colour = "";
 
     var state = 0;
     var batteryVoltage = 0;
@@ -255,11 +256,11 @@
         var data = JSON.parse(raw_data);
         
         state = data.st;
-        batteryLevel = data.bV;
+        batteryLevel = data.bL;
         batteryVoltage = data.bV;
         batteryCycles = data.bC;
         totalTripDistance = data.tD;
-        currentHeading = data.cH;
+        currentHeading = 180 - data.cH;
         current_pos = data.pos;
         current_x = current_pos[0];
         current_y = current_pos[1];
@@ -275,6 +276,8 @@
             rStatus = "Moving";
         }else if(state == 2){
             rStatus = "Charging";
+        }else if(state == 3){
+            rStatus = "Waiting";
         }else{
             rStatus = "Undefined";
         }
@@ -291,7 +294,7 @@
     }
 
     function send_data() {
-        var raw_data = '{"Cid":' + command_id + ',"mode":' + mode + ',"rH":' + reqHeading + ',"rD":' + reqDistance + ',"rS":' + reqSpeed + ',"rC":' + reqCharge + ',"pSt":' + pstop_time + '}';
+        var raw_data = '{"Cid":' + command_id + ',"mode":' + mode + ',"rH":' + reqHeading + ',"rD":' + reqDistance + ',"rS":' + reqSpeed + ',"rC":' + reqCharge + ',"pSt":' + pstop_time + ',"col":"' + hunt_colour + '"}';
         connection.send(raw_data);
         console.log(raw_data);
     }
@@ -306,8 +309,16 @@
             bufferOutput = document.getElementById("commandInput").value;
         }else if(cmdMode == 1){
             bufferOutput = "move " + reqDistance + "mm " + reqHeading + "deg " + reqSpeed + "%";
+        }else if(cmdMode == 2){
+            bufferOutput = "charge " + reqCharge + "%";
+        }else if(cmdMode == 3){
+            bufferOutput = "wait " + pstop_time + "s";
+        }else if(cmdMode == 4){
+            bufferOutput = "colour " + hunt_colour;
+        }else if(cmdMode == -1){
+            bufferOutput = "telemetry reset";
         }
-        if((mode == 1) || (mode == -1) || (mode == 2) || (mode == 3)){
+        if((mode == 1) || (mode == -1) || (mode == 2) || (mode == 3) || (mode == 4)){
             document.getElementById("command_buffer").innerHTML += '[' + command_id + '] ' + bufferOutput + "<br>";
             document.getElementById("commandInput").value = ""
         }else if(mode == 0){
@@ -338,11 +349,12 @@
     function moveCmd(dist,hdg,spd){
         mode = 1;
         reqDistance = dist;
-        reqHeading = hdg;
+        reqHeading = 360 - hdg;
         reqSpeed = spd;
         reqCharge = 0;
         pstop_time = 0;
         tel_rst = 0;
+        hunt_colour = "";
         send_data();
         updateCommandBuffer();
         command_id++;
@@ -356,6 +368,7 @@
         reqCharge = 0;
         pstop_time = 0;
         tel_rst = 0;
+        hunt_colour = "";
         send_data();
         command_id = 1;
         updateCommandBuffer();
@@ -369,6 +382,7 @@
         reqCharge = 0;
         pstop_time = pstp_tme;
         tel_rst = 0;
+        hunt_colour = "";
         send_data();
         updateCommandBuffer();
         command_id++;
@@ -382,6 +396,7 @@
         reqCharge = chrglvl;
         pstop_time = 0;
         tel_rst = 0;
+        hunt_colour = "";
         send_data();
         updateCommandBuffer();
         command_id++;
@@ -394,6 +409,20 @@
         reqSpeed = 0;
         reqCharge = 0;
         pstop_time = 0;
+        hunt_colour = "";
+        send_data();
+        updateCommandBuffer();
+        command_id++;
+    }
+
+    function colourCmd(clrName){
+        mode = 4;
+        reqDistance = 0;
+        reqHeading = 0;
+        reqSpeed = 0;
+        reqCharge = 0;
+        pstop_time = 0;
+        hunt_colour = clrName;
         send_data();
         updateCommandBuffer();
         command_id++;
@@ -409,7 +438,7 @@
         }
     }
 
-    var setHdgto = 270;
+    var setHdgto = 180;
     var hdg_slider = document.getElementById("HdgSlider");
     var hdg_output = document.getElementById("SetHeading");
     hdg_output.innerHTML = hdg_slider.value;
@@ -418,7 +447,7 @@
         setHdgto = this.value;
     }
 
-    var setTransto = 100;
+    var setTransto = 0;
     var tran_slider = document.getElementById("TranSlider");
     var tran_output = document.getElementById("SetTrans");
     tran_output.innerHTML = tran_slider.value;
@@ -427,7 +456,7 @@
         setTransto = this.value;
     }
 
-    var setSpdto = 50;
+    var setSpdto = 100;
     var spd_slider = document.getElementById("SpdSlider");
     var spd_output = document.getElementById("SetSpd");
     spd_output.innerHTML = spd_slider.value;

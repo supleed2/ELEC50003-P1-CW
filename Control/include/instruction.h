@@ -1,5 +1,6 @@
 #ifndef INSTRUCTION_H
 #define INSTRUCTION_H
+#include <string>
 
 typedef enum {
     INSTR_RESET = -1,
@@ -19,7 +20,7 @@ typedef struct instruction
     float speed;
     int charge;
     int time;
-    int colour;
+    String colour;
 } RoverInstruction;
 
 #endif

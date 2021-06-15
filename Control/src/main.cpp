@@ -15,6 +15,7 @@
 #include "instruction.h"
 #include "colour.h"
 #include <queue>
+#include "time.h"
 #pragma endregion
 
 #pragma region Enable extra debugging info for ESP32
@@ -32,6 +33,7 @@
 #define TX3pin 4  // Pin 11 on expansion board, UART3
 #define RX4pin 15 // Pin 12 on expansion board, UART4
 #define TX4pin 2  // Pin 13 on expansion board, UART4
+#define ntpServer "pool.ntp.org"
 #pragma endregion
 
 #pragma region Function Declarations
@@ -73,7 +75,8 @@ int bb_left, bb_right, bb_top, bb_bottom;
 int bb_centre_x, bb_centre_y;
 float chargeGoal;
 int waitGoal;
-Colour_t colour;
+String colour;
+time_t now;
 #pragma endregion
 
 void setup()
@@ -123,6 +126,8 @@ void setup()
 		delay(5000);
 	}
 	Serial.println("mDNS set up, access Control Panel at 'rover2.local/'");
+
+	configTime(0, 0, ntpServer);
 
 	webserver.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
 				 { request->send(SPIFFS, "/index.html", "text/html"); }); // Serve "index.html" at root page
@@ -204,7 +209,7 @@ void loop()
 			case INSTR_COLOUR:
 			{
 				Status = CS_IDLE;
-				colour = (Colour_t)instr->colour;
+				colour = instr->colour;
 			}
 			break;
 			default:
@@ -362,7 +367,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			Serial.println("Change colour tracking command received");
 			instr.id = rdoc["Cid"];
 			instr.instr = INSTR_COLOUR;
-			instr.colour = rdoc["col"];
+			String temp = rdoc["col"];
+			instr.colour = temp;
 			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
 
 			queueInstruction(instr); // Put charge command in InstrQueue
@@ -402,8 +408,10 @@ void sendToCommand()
 	DynamicJsonDocument tdoc(1024);
 	tdoc["st"] = Status;
 	tdoc["bV"] = batteryVoltage;
-	tdoc["bL"] = batteryLevel;
-	tdoc["bC"] = batteryCycles;
+	tdoc["bL"] = 100; // tdoc["bL"] = batteryLevel; Hardcoded value as Energy is not present on demo Rover
+	time(&now);
+	// Serial.println(now);
+	tdoc["bC"] = ((float)now - 1623000000.0)/21600.0; // tdoc["bC"] = batteryCycles; Estimates cycles in number of 6 hour periods
 	tdoc["tD"] = odometer;
 	tdoc["cH"] = heading;
 	tdoc["pos"][0] = xpos;
@@ -435,6 +443,7 @@ void recvFromDrive() // Update telemetry data and state info from Drive packet
 		odometer = rdoc["mm"];
 		xpos = rdoc["pos"][0];
 		ypos = rdoc["pos"][1];
+		batteryVoltage = rdoc["bV"];
 	}
 }
 
