@@ -13,6 +13,7 @@
 #include <SPIFFS.h>
 #include "status.h"
 #include "instruction.h"
+#include "colour.h"
 #include <queue>
 #pragma endregion
 
@@ -71,6 +72,7 @@ int bb_left, bb_right, bb_top, bb_bottom;
 int bb_centre_x, bb_centre_y;
 float chargeGoal;
 int waitGoal;
+Colour_t colour;
 #pragma endregion
 
 void setup()
@@ -100,6 +102,7 @@ void setup()
 	driveCommandComplete = 1;
 	chargeGoal = 0;
 	waitGoal = 0;
+	colour = C_RED;
 
 	if (!SPIFFS.begin(true)) // Mount SPIFFS
 	{
@@ -194,6 +197,12 @@ void loop()
 			{
 				Status = CS_WAITING;			   // Set waiting state
 				waitGoal = millis() + 1000*(instr->time); // Set wait time
+			}
+			break;
+			case INSTR_COLOUR:
+			{
+				Status = CS_IDLE;
+				colour = instr->colour;
 			}
 			break;
 			default:
@@ -346,6 +355,17 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			queueInstruction(instr); // Put charge command in InstrQueue
 		}
 		break;
+		case 4: // Normal wait command, results in no motion, added to end of command cache
+		{
+			Serial.println("Change colour tracking command received");
+			instr.id = rdoc["Cid"];
+			instr.instr = INSTR_COLOUR;
+			instr.colour = rdoc["col"];
+			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
+
+			queueInstruction(instr); // Put charge command in InstrQueue
+		}
+		break;
 		default:
 		{
 			// Default case, print and continue
@@ -437,7 +457,7 @@ void recvFromEnergy() // Update telemetry data and state info from Energy packet
 
 void sendToVision()
 {
-	Serial3.print("R"); // Request new data from Vision
+	Serial3.print(colour); // Select coloured ball to track
 }
 
 void recvFromVision() // Update bounding box and obstacle detection data from Vision packet

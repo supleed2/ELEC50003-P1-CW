@@ -6,7 +6,8 @@ typedef enum {
     INSTR_STOP,
     INSTR_MOVE,
     INSTR_CHARGE,
-    INSTR_WAIT
+    INSTR_WAIT,
+    INSTR_COLOUR
 } instr_t;
 
 typedef struct instruction
@@ -18,6 +19,7 @@ typedef struct instruction
     float speed;
     int charge;
     int time;
+    Colour_t colour;
 } RoverInstruction;
 
 #endif
