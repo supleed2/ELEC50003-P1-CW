@@ -460,6 +460,10 @@ void loop()
         digitalWrite(pwmr, LOW);
         digitalWrite(pwml, LOW);
         commandCompletionStatus = 3;
+      }else if (rdoc.containsKey("rstD") && rdoc["rstD"] == 1){
+        goal_x = 0;
+        goal_y = 0;
+        distTravelled_mm = 0;
       }
     }
   }
@@ -474,7 +478,7 @@ void loop()
     //Serial.println("status0");
   }
   if (commandCompletionStatus == 1)
-  { Serial.println("status1");
+  { //Serial.println("status1");
     //newCommand
     //set goals
     goal_x += distance * sin(requiredHeading);
@@ -567,7 +571,7 @@ void loop()
     commandComplete = true;
     current_x = goal_x;
     current_y = goal_y;
-    distTravelled_mm += distance;
+    distTravelled_mm += abs(distance);
 
     //compile energy use
     unsigned long currentMillis_Energy = millis();
@@ -595,6 +599,7 @@ void loop()
     tdoc["mm"] = distTravelled_mm;
     tdoc["pos"][0] = current_x;
     tdoc["pos"][1] = current_y;
+    tdoc["bV"] = vb;
     serializeJson(tdoc, Serial1); // Build JSON and send on UART1
     serializeJson(tdoc, Serial); // Build JSON and send on UART1
     commandCompletionStatus = 0;
@@ -604,7 +609,7 @@ void loop()
   //find motor voltage
   //int motorVSensor = analogRead(A5);
   //float motorVoltage = motorVSensor * (5.0 / 1023.0);
-  float motorVoltage = 5;
+  float motorVoltage = vb;
 
   //find average power
 
@@ -749,9 +754,10 @@ void sampling(){
   // The analogRead process gives a value between 0 and 1023
   // representing a voltage between 0 and the analogue reference which is 4.096V
 
-  vb = sensorValue0 * (4.096 / 1023.0);   // Convert the Vb sensor reading to volts
+  vb = sensorValue0 * (4.94 / 1023.0);   // Convert the Vb sensor reading to volts
   vref = sensorValue2 * (4.096 / 1023.0); // Convert the Vref sensor reading to volts
   vpd = sensorValue3 * (4.096 / 1023.0);  // Convert the Vpd sensor reading to volts
+
 
   // The inductor current is in mA from the sensor so we need to convert to amps.
   // We want to treat it as an input current in the Boost, so its also inverted

@@ -145,7 +145,7 @@
                             <td style="text-align: center;" colspan="6"><strong>Set Translation to: </strong><strong id="SetTrans" style="font-size: 18px;">180</strong><strong>mm</strong></td>
                         </tr>
                         <tr>
-                            <td colspan="6"><input type ="range" min="-200" max="100" value="0" class="slider" id="TranSlider"></td>
+                            <td colspan="6"><input type ="range" min="-200" max="200" value="0" class="slider" id="TranSlider"></td>
                         </tr>
                         <tr>
                             <td style="text-align: center;" colspan="6"><strong>Set Speed to: </strong><strong id="SetSpd" style="font-size: 18px;">50</strong><strong>%</strong></td>
@@ -260,7 +260,7 @@
         batteryVoltage = data.bV;
         batteryCycles = data.bC;
         totalTripDistance = data.tD;
-        currentHeading = data.cH;
+        currentHeading = data.cH + 180;
         current_pos = data.pos;
         current_x = current_pos[0];
         current_y = current_pos[1];
@@ -294,7 +294,7 @@
     }
 
     function send_data() {
-        var raw_data = '{"Cid":' + command_id + ',"mode":' + mode + ',"rH":' + reqHeading + ',"rD":' + reqDistance + ',"rS":' + reqSpeed + ',"rC":' + reqCharge + ',"pSt":' + pstop_time + ',"col":' + hunt_colour + '}';
+        var raw_data = '{"Cid":' + command_id + ',"mode":' + mode + ',"rH":' + reqHeading + ',"rD":' + reqDistance + ',"rS":' + reqSpeed + ',"rC":' + reqCharge + ',"pSt":' + pstop_time + ',"col":"' + hunt_colour + '"}';
         connection.send(raw_data);
         console.log(raw_data);
     }
@@ -313,10 +313,12 @@
             bufferOutput = "charge " + reqCharge + "%";
         }else if(cmdMode == 3){
             bufferOutput = "wait " + pstop_time + "s";
+        }else if(cmdMode == 4){
+            bufferOutput = "colour " + hunt_colour;
         }else if(cmdMode == -1){
             bufferOutput = "telemetry reset";
         }
-        if((mode == 1) || (mode == -1) || (mode == 2) || (mode == 3)){
+        if((mode == 1) || (mode == -1) || (mode == 2) || (mode == 3) || (mode == 4)){
             document.getElementById("command_buffer").innerHTML += '[' + command_id + '] ' + bufferOutput + "<br>";
             document.getElementById("commandInput").value = ""
         }else if(mode == 0){

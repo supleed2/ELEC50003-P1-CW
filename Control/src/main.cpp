@@ -73,7 +73,7 @@ int bb_left, bb_right, bb_top, bb_bottom;
 int bb_centre_x, bb_centre_y;
 float chargeGoal;
 int waitGoal;
-Colour_t colour;
+String colour;
 #pragma endregion
 
 void setup()
@@ -204,7 +204,7 @@ void loop()
 			case INSTR_COLOUR:
 			{
 				Status = CS_IDLE;
-				colour = (Colour_t)instr->colour;
+				colour = instr->colour;
 			}
 			break;
 			default:
@@ -362,7 +362,8 @@ void webSocketEvent(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
 			Serial.println("Change colour tracking command received");
 			instr.id = rdoc["Cid"];
 			instr.instr = INSTR_COLOUR;
-			instr.colour = rdoc["col"];
+			String temp = rdoc["col"];
+			instr.colour = temp;
 			// Ignore rdoc["rH"], rdoc["rD"], rdoc["rS"], rdoc["rC"]
 
 			queueInstruction(instr); // Put charge command in InstrQueue
