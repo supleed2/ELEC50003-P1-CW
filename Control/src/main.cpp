@@ -410,7 +410,8 @@ void sendToCommand()
 	tdoc["bV"] = batteryVoltage;
 	tdoc["bL"] = 100; // tdoc["bL"] = batteryLevel; Hardcoded value as Energy is not present on demo Rover
 	time(&now);
-	tdoc["bC"] = (now - 1623750000)/21600; // tdoc["bC"] = batteryCycles; Estimates cycles in number of 6 hour periods
+	// Serial.println(now);
+	tdoc["bC"] = ((float)now - 1623000000.0)/21600.0; // tdoc["bC"] = batteryCycles; Estimates cycles in number of 6 hour periods
 	tdoc["tD"] = odometer;
 	tdoc["cH"] = heading;
 	tdoc["pos"][0] = xpos;

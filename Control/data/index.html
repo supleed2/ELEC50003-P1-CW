@@ -256,11 +256,11 @@
         var data = JSON.parse(raw_data);
         
         state = data.st;
-        batteryLevel = data.bV;
+        batteryLevel = data.bL;
         batteryVoltage = data.bV;
         batteryCycles = data.bC;
         totalTripDistance = data.tD;
-        currentHeading = data.cH + 180;
+        currentHeading = 180 - data.cH;
         current_pos = data.pos;
         current_x = current_pos[0];
         current_y = current_pos[1];
@@ -349,7 +349,7 @@
     function moveCmd(dist,hdg,spd){
         mode = 1;
         reqDistance = dist;
-        reqHeading = hdg;
+        reqHeading = 360 - hdg;
         reqSpeed = spd;
         reqCharge = 0;
         pstop_time = 0;
