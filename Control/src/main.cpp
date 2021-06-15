@@ -195,6 +195,7 @@ void loop()
 			break;
 			}
 			lastExecutedCommand = instr->id; // Update tracker of last processed command
+			InstrQueue.pop();
 		}
 	}
 	break;
@@ -439,10 +440,7 @@ void recvFromCompass()
 void emergencyStop()
 {
 	DynamicJsonDocument tdoc(1024);
-	tdoc["rH"] = heading;
-	tdoc["dist"] = -1;
-	tdoc["sp"] = -1;
-	tdoc["cH"] = heading;
+	tdoc["stp"] = 1;
 	serializeJson(tdoc, Serial1); // Send stop signals to Drive
 	sendToEnergy(0);			  // Send stop signal to Energy
 	while (InstrQueue.size())
