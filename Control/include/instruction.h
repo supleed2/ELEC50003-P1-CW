@@ -19,7 +19,7 @@ typedef struct instruction
     float speed;
     int charge;
     int time;
-    Colour_t colour;
+    int colour;
 } RoverInstruction;
 
 #endif
