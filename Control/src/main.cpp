@@ -202,7 +202,7 @@ void loop()
 			case INSTR_COLOUR:
 			{
 				Status = CS_IDLE;
-				colour = instr->colour;
+				colour = (Colour_t)instr->colour;
 			}
 			break;
 			default:
