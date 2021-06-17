@@ -1,7 +1,6 @@
 #pragma region Includes
 #include <Arduino.h>
 #include <string>
-#include <SoftwareSerial.h> // Software Serial not currently needed
 #include <SoftwareSerial.h>
 #include <AsyncTCP.h>
 #include <ESPAsyncWebServer.h>
@@ -173,7 +172,8 @@ void loop()
 				ypos = 0;
 				DynamicJsonDocument tdoc(128);
 				tdoc["rstD"] = 1;
-				serializeJson(tdoc, Serial1); // Send reset odometer signal to Drive
+				serializeJson(tdoc, Serial1);	  // Send reset odometer signal to Drive
+				lastCompletedCommand = instr->id; // Set LCCid on telemetry reset as Rover state is not changed
 			}
 			break;
 			case INSTR_STOP: // Emergency stop
@@ -504,6 +504,7 @@ void updateRSSI()
 
 void emergencyStop()
 {
+	lastCompletedCommand = 0;
 	DynamicJsonDocument tdoc(1024);
 	tdoc["stp"] = 1;
 	serializeJson(tdoc, Serial1); // Send stop signals to Drive
